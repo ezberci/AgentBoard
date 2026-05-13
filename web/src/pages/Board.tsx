@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useProjects } from "@/hooks/useProjects";
 import { useBoard } from "@/hooks/useBoard";
 import { Column } from "@/components/Column";
+import { TaskDetail } from "@/components/TaskDetail";
 import { api } from "@/api/client";
 
 export function Board() {
@@ -17,6 +18,7 @@ export function Board() {
   const { data: projects, isLoading: projectsLoading, isError: projectsError } = useProjects();
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const { columns, tasks, isLoading: boardLoading, isError: boardError } = useBoard(selectedProjectId);
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -77,7 +79,7 @@ export function Board() {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-surface-sunken text-zinc-100">
+    <div className="flex h-full flex-col bg-surface-sunken text-zinc-100">
       <header className="flex items-center gap-4 border-b border-border bg-surface px-6 py-3">
         <h1 className="text-lg font-bold tracking-tight">Vibe Kanban</h1>
         <div className="flex items-center gap-2">
@@ -120,12 +122,15 @@ export function Board() {
                   column={col}
                   tasks={tasksByColumn.get(col.id) ?? []}
                   agentMap={new Map()}
+                  onTaskClick={(taskId) => setSelectedTaskId(taskId)}
                 />
               ))}
             </div>
           </DndContext>
         )}
       </main>
+
+      <TaskDetail taskId={selectedTaskId} onClose={() => setSelectedTaskId(null)} />
     </div>
   );
 }

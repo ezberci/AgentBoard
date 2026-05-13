@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from vibe_kanban_clone.schemas.skill import SkillRead
+
 
 class AgentCreate(BaseModel):
     """Schema for creating an agent."""
@@ -23,6 +25,7 @@ class AgentRead(BaseModel):
     system_prompt: str | None
     color: str | None
     created_at: datetime
+    skills: list[SkillRead]
 
 
 class AgentUpdate(BaseModel):

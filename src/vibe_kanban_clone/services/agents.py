@@ -5,6 +5,7 @@ import re
 import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from vibe_kanban_clone.models.agent import Agent
 from vibe_kanban_clone.models.skill import Skill
@@ -50,14 +51,16 @@ async def create_agent(session: AsyncSession, data: AgentCreate) -> Agent:
 
 
 async def get_agent(session: AsyncSession, agent_id: int) -> Agent | None:
-    """Get an agent by ID."""
-    result = await session.execute(select(Agent).where(Agent.id == agent_id))
+    """Get an agent by ID with eagerly loaded skills."""
+    result = await session.execute(
+        select(Agent).options(selectinload(Agent.skills)).where(Agent.id == agent_id)
+    )
     return result.scalar_one_or_none()
 
 
 async def list_agents(session: AsyncSession) -> list[Agent]:
-    """List all agents."""
-    result = await session.execute(select(Agent))
+    """List all agents with eagerly loaded skills."""
+    result = await session.execute(select(Agent).options(selectinload(Agent.skills)))
     return list(result.scalars().all())
 
 

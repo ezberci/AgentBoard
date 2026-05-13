@@ -5,6 +5,7 @@ import type { Task } from "@/types";
 interface TaskCardProps {
   task: Task;
   agentColor?: string;
+  onClick?: () => void;
 }
 
 function priorityLabel(priority: number): string {
@@ -21,7 +22,7 @@ function priorityClass(priority: number): string {
   return "bg-zinc-500/20 text-zinc-400";
 }
 
-export function TaskCard({ task, agentColor }: TaskCardProps) {
+export function TaskCard({ task, agentColor, onClick }: TaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `task-${task.id}`,
     data: { task },
@@ -38,7 +39,8 @@ export function TaskCard({ task, agentColor }: TaskCardProps) {
       style={style}
       {...listeners}
       {...attributes}
-      className="rounded-lg border border-border bg-surface-raised p-3 shadow-sm transition hover:shadow-md"
+      onClick={onClick}
+      className="rounded-lg border border-border bg-surface-raised p-3 shadow-sm transition hover:shadow-md cursor-pointer"
     >
       <div className="flex items-start justify-between gap-2">
         <h4 className="text-sm font-medium text-zinc-100">{task.title}</h4>

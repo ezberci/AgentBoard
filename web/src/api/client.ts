@@ -56,9 +56,23 @@ export const api = {
 
   getAgents: () => fetchJson<Agent[]>("/agents"),
   getAgent: (id: number) => fetchJson<Agent>(`/agents/${id}`),
+  createAgent: (payload: { name: string; system_prompt?: string; color?: string }) =>
+    fetchJson<Agent>("/agents", { method: "POST", body: JSON.stringify(payload) }),
+  updateAgent: (id: number, payload: { name?: string; system_prompt?: string; color?: string }) =>
+    fetchJson<Agent>(`/agents/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteAgent: (id: number) => fetchJson<void>(`/agents/${id}`, { method: "DELETE" }),
+  assignSkill: (agentId: number, skillId: number) =>
+    fetchJson<Agent>(`/agents/${agentId}/skills/${skillId}`, { method: "POST" }),
+  removeSkill: (agentId: number, skillId: number) =>
+    fetchJson<void>(`/agents/${agentId}/skills/${skillId}`, { method: "DELETE" }),
 
   getSkills: () => fetchJson<Skill[]>("/skills"),
   getSkill: (id: number) => fetchJson<Skill>(`/skills/${id}`),
+  createSkill: (payload: { name: string; description?: string; instructions?: string; allowed_tools?: unknown[] }) =>
+    fetchJson<Skill>("/skills", { method: "POST", body: JSON.stringify(payload) }),
+  updateSkill: (id: number, payload: { name?: string; description?: string; instructions?: string; allowed_tools?: unknown[] }) =>
+    fetchJson<Skill>(`/skills/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteSkill: (id: number) => fetchJson<void>(`/skills/${id}`, { method: "DELETE" }),
 
   health: () => fetchJson<{ status: string }>("/health"),
 };

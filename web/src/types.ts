@@ -37,6 +37,7 @@ export interface Agent {
   system_prompt?: string;
   color?: string;
   created_at: string;
+  skills: Skill[];
 }
 
 export interface Skill {

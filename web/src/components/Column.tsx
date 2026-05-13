@@ -6,9 +6,10 @@ interface ColumnProps {
   column: ColumnType;
   tasks: Task[];
   agentMap: Map<number, string>;
+  onTaskClick?: (taskId: number) => void;
 }
 
-export function Column({ column, tasks, agentMap }: ColumnProps) {
+export function Column({ column, tasks, agentMap, onTaskClick }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `column-${column.id}`,
     data: { column },
@@ -29,7 +30,12 @@ export function Column({ column, tasks, agentMap }: ColumnProps) {
       </div>
       <div className="flex flex-col gap-2">
         {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} agentColor={agentMap.get(task.assigned_agent_id ?? -1)} />
+          <TaskCard
+            key={task.id}
+            task={task}
+            agentColor={agentMap.get(task.assigned_agent_id ?? -1)}
+            onClick={() => onTaskClick?.(task.id)}
+          />
         ))}
       </div>
     </div>
