@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --surface: #18181b;
+    --surface-raised: #27272a;
+    --surface-sunken: #09090b;
+    --border: #3f3f46;
+    --muted: #3f3f46;
+    --muted-fg: #a1a1aa;
+    --accent: #8b5cf6;
+  }
+
+  html {
+    font-family: "Geist", sans-serif;
+  }
+
+  body {
+    background-color: var(--surface-sunken);
+    color: #e4e4e7;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}

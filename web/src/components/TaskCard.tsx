@@ -1,0 +1,50 @@
+import type { Task } from "@/types";
+
+interface TaskCardProps {
+  task: Task;
+  agentColor?: string;
+}
+
+function priorityLabel(priority: number): string {
+  if (priority <= 1) return "P1";
+  if (priority <= 2) return "P2";
+  if (priority <= 3) return "P3";
+  return "P4";
+}
+
+function priorityClass(priority: number): string {
+  if (priority <= 1) return "bg-red-500/20 text-red-400";
+  if (priority <= 2) return "bg-amber-500/20 text-amber-400";
+  if (priority <= 3) return "bg-blue-500/20 text-blue-400";
+  return "bg-zinc-500/20 text-zinc-400";
+}
+
+export function TaskCard({ task, agentColor }: TaskCardProps) {
+  return (
+    <div className="rounded-lg border border-border bg-surface-raised p-3 shadow-sm transition hover:shadow-md">
+      <div className="flex items-start justify-between gap-2">
+        <h4 className="text-sm font-medium text-zinc-100">{task.title}</h4>
+        <span
+          className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${priorityClass(task.priority)}`}
+        >
+          {priorityLabel(task.priority)}
+        </span>
+      </div>
+      {task.description && (
+        <p className="mt-1 line-clamp-2 text-xs text-muted-fg">{task.description}</p>
+      )}
+      <div className="mt-2 flex items-center gap-2">
+        {agentColor && (
+          <span
+            className="inline-block h-2 w-2 rounded-full"
+            style={{ backgroundColor: agentColor }}
+            title="Assigned agent"
+          />
+        )}
+        {task.assigned_agent_id && !agentColor && (
+          <span className="inline-block h-2 w-2 rounded-full bg-zinc-500" title="Assigned agent" />
+        )}
+      </div>
+    </div>
+  );
+}
