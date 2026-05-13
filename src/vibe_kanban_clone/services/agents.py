@@ -46,6 +46,7 @@ async def create_agent(session: AsyncSession, data: AgentCreate) -> Agent:
     session.add(agent)
     await session.commit()
     await session.refresh(agent)
+    await session.refresh(agent, attribute_names=["skills"])
     logger.info("agent_created", agent_id=agent.id, color=color)
     return agent
 
@@ -74,6 +75,7 @@ async def update_agent(session: AsyncSession, agent: Agent, data: AgentUpdate) -
         agent.color = data.color
     await session.commit()
     await session.refresh(agent)
+    await session.refresh(agent, attribute_names=["skills"])
     logger.info("agent_updated", agent_id=agent.id)
     return agent
 
@@ -92,6 +94,7 @@ async def assign_skill(session: AsyncSession, agent: Agent, skill: Skill) -> Age
         agent.skills.append(skill)
         await session.commit()
         await session.refresh(agent)
+        await session.refresh(agent, attribute_names=["skills"])
     return agent
 
 
@@ -102,4 +105,5 @@ async def remove_skill(session: AsyncSession, agent: Agent, skill: Skill) -> Age
         agent.skills.remove(skill)
         await session.commit()
         await session.refresh(agent)
+        await session.refresh(agent, attribute_names=["skills"])
     return agent
