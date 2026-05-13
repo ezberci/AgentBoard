@@ -6,6 +6,8 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+# Import all models so they are registered in Base.metadata
+import vibe_kanban_clone.models  # noqa: F401
 from vibe_kanban_clone.config import settings
 from vibe_kanban_clone.db.base import Base
 
