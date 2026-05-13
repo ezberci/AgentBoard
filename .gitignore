@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# Env
+.env
+.env.local
+
+# SQLite
+*.db
+*.db-wal
+*.db-shm
+
+# Node
+node_modules/
+dist/
+
+# IDE
+.claude/
+CLAUDE.md
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Kimi
+.kimi/
+AGENTS.md
