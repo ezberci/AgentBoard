@@ -1,3 +1,5 @@
+import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import type { Task } from "@/types";
 
 interface TaskCardProps {
@@ -20,8 +22,24 @@ function priorityClass(priority: number): string {
 }
 
 export function TaskCard({ task, agentColor }: TaskCardProps) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `task-${task.id}`,
+    data: { task },
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+  };
+
   return (
-    <div className="rounded-lg border border-border bg-surface-raised p-3 shadow-sm transition hover:shadow-md">
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className="rounded-lg border border-border bg-surface-raised p-3 shadow-sm transition hover:shadow-md"
+    >
       <div className="flex items-start justify-between gap-2">
         <h4 className="text-sm font-medium text-zinc-100">{task.title}</h4>
         <span

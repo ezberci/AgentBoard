@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from vibe_kanban_clone.api.deps import get_session
+from vibe_kanban_clone.api.routes.ws import broadcast_project
 from vibe_kanban_clone.schemas.column import (
     ColumnCreate,
     ColumnRead,
@@ -41,6 +42,11 @@ async def create_column(
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
     column = await columns_service.create_column(session, project_id, data)
+    await broadcast_project(
+        project_id,
+        "column.created",
+        ColumnRead.model_validate(column).model_dump(mode="json"),
+    )
     return column
 
 
@@ -55,6 +61,11 @@ async def update_column(
     if column is None:
         raise HTTPException(status_code=404, detail="Column not found")
     column = await columns_service.update_column(session, column, data)
+    await broadcast_project(
+        column.project_id,
+        "column.updated",
+        ColumnRead.model_validate(column).model_dump(mode="json"),
+    )
     return column
 
 
@@ -67,7 +78,13 @@ async def delete_column(
     column = await columns_service.get_column(session, column_id)
     if column is None:
         raise HTTPException(status_code=404, detail="Column not found")
+    project_id = column.project_id
     await columns_service.delete_column(session, column)
+    await broadcast_project(
+        project_id,
+        "column.deleted",
+        {"column_id": column_id},
+    )
 
 
 @router.post("/columns/{column_id}/reorder", response_model=list[ColumnRead])
@@ -80,4 +97,12 @@ async def reorder_columns(
     column = await columns_service.get_column(session, column_id)
     if column is None:
         raise HTTPException(status_code=404, detail="Column not found")
-    return await columns_service.reorder_columns(session, column.project_id, data)
+    columns = await columns_service.reorder_columns(session, column.project_id, data)
+    await broadcast_project(
+        column.project_id,
+        "column.reordered",
+        {
+            "columns": [ColumnRead.model_validate(c).model_dump(mode="json") for c in columns],
+        },
+    )
+    return columns

@@ -1,12 +1,30 @@
 import { useState } from "react";
+import {
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { useQueryClient } from "@tanstack/react-query";
 import { useProjects } from "@/hooks/useProjects";
 import { useBoard } from "@/hooks/useBoard";
 import { Column } from "@/components/Column";
+import { api } from "@/api/client";
 
 export function Board() {
+  const queryClient = useQueryClient();
   const { data: projects, isLoading: projectsLoading, isError: projectsError } = useProjects();
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const { columns, tasks, isLoading: boardLoading, isError: boardError } = useBoard(selectedProjectId);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
 
   const tasksByColumn = new Map<number, typeof tasks>();
   for (const col of columns) {
@@ -20,6 +38,43 @@ export function Board() {
   }
 
   const sortedColumns = [...columns].sort((a, b) => a.position - b.position);
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
+
+    if (!activeId.startsWith("task-") || !overId.startsWith("column-")) return;
+
+    const taskId = Number(activeId.replace("task-", ""));
+    const columnId = Number(overId.replace("column-", ""));
+
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task || task.column_id === columnId) return;
+
+    // Optimistic update
+    queryClient.setQueryData(
+      ["projects", selectedProjectId, "tasks"],
+      (old: typeof tasks | undefined) => {
+        if (!old) return old;
+        return old.map((t) => (t.id === taskId ? { ...t, column_id: columnId } : t));
+      }
+    );
+
+    try {
+      await api.moveTask(taskId, {
+        column_id: columnId,
+        expected_version: task.version,
+      });
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("409")) {
+        queryClient.invalidateQueries({ queryKey: ["projects", selectedProjectId, "tasks"] });
+        queryClient.invalidateQueries({ queryKey: ["projects", selectedProjectId, "columns"] });
+      }
+    }
+  };
 
   return (
     <div className="flex h-screen flex-col bg-surface-sunken text-zinc-100">
@@ -57,16 +112,18 @@ export function Board() {
         ) : boardError ? (
           <div className="flex h-full items-center justify-center text-red-400">Failed to load board.</div>
         ) : (
-          <div className="flex h-full gap-4">
-            {sortedColumns.map((col) => (
-              <Column
-                key={col.id}
-                column={col}
-                tasks={tasksByColumn.get(col.id) ?? []}
-                agentMap={new Map()}
-              />
-            ))}
-          </div>
+          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <div className="flex h-full gap-4">
+              {sortedColumns.map((col) => (
+                <Column
+                  key={col.id}
+                  column={col}
+                  tasks={tasksByColumn.get(col.id) ?? []}
+                  agentMap={new Map()}
+                />
+              ))}
+            </div>
+          </DndContext>
         )}
       </main>
     </div>

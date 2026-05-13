@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from vibe_kanban_clone.api.deps import get_session
+from vibe_kanban_clone.api.routes.ws import broadcast_project
 from vibe_kanban_clone.schemas.task import TaskCreate, TaskMove, TaskRead, TaskUpdate
 from vibe_kanban_clone.schemas.task_comment import TaskCommentCreate, TaskCommentRead
 from vibe_kanban_clone.services import comments as comments_service
@@ -34,6 +35,11 @@ async def create_task(
 ) -> TaskRead:
     """Create a new task."""
     task = await tasks_service.create_task(session, data)
+    await broadcast_project(
+        task.project_id,
+        "task.created",
+        TaskRead.model_validate(task).model_dump(mode="json"),
+    )
     return task
 
 
@@ -63,6 +69,11 @@ async def update_task(
         task = await tasks_service.update_task(session, task, data)
     except ValueError:
         raise HTTPException(status_code=409, detail="Task was modified by another client") from None
+    await broadcast_project(
+        task.project_id,
+        "task.updated",
+        TaskRead.model_validate(task).model_dump(mode="json"),
+    )
     return task
 
 
@@ -75,7 +86,13 @@ async def delete_task(
     task = await tasks_service.get_task(session, task_id)
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found")
+    project_id = task.project_id
     await tasks_service.delete_task(session, task)
+    await broadcast_project(
+        project_id,
+        "task.deleted",
+        {"task_id": task_id},
+    )
 
 
 @router.post("/tasks/{task_id}/move", response_model=TaskRead)
@@ -92,6 +109,11 @@ async def move_task(
         task = await tasks_service.move_task(session, task, data)
     except ValueError:
         raise HTTPException(status_code=409, detail="Task was modified by another client") from None
+    await broadcast_project(
+        task.project_id,
+        "task.moved",
+        TaskRead.model_validate(task).model_dump(mode="json"),
+    )
     return task
 
 
@@ -106,4 +128,9 @@ async def create_comment(
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found")
     comment = await comments_service.create_comment(session, task_id, data)
+    await broadcast_project(
+        task.project_id,
+        "comment.created",
+        TaskCommentRead.model_validate(comment).model_dump(mode="json"),
+    )
     return comment

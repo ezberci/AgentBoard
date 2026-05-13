@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from vibe_kanban_clone.api.deps import get_session
+from vibe_kanban_clone.api.routes.ws import broadcast_global
 from vibe_kanban_clone.schemas.project import ProjectCreate, ProjectRead, ProjectUpdate
 from vibe_kanban_clone.services import projects as projects_service
 
@@ -27,6 +28,10 @@ async def create_project(
 ) -> ProjectRead:
     """Create a new project."""
     project = await projects_service.create_project(session, data)
+    await broadcast_global(
+        "project.created",
+        ProjectRead.model_validate(project).model_dump(mode="json"),
+    )
     return project
 
 
@@ -53,6 +58,10 @@ async def update_project(
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
     project = await projects_service.update_project(session, project, data)
+    await broadcast_global(
+        "project.updated",
+        ProjectRead.model_validate(project).model_dump(mode="json"),
+    )
     return project
 
 
@@ -66,3 +75,7 @@ async def delete_project(
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
     await projects_service.delete_project(session, project)
+    await broadcast_global(
+        "project.deleted",
+        {"project_id": project_id},
+    )
