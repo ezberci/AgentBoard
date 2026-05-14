@@ -49,3 +49,4 @@ class Task(Base):
     comments: Mapped[list[TaskComment]] = relationship(
         back_populates="task", cascade="all, delete-orphan"
     )
+    runs: Mapped[list[TaskRun]] = relationship(back_populates="task", cascade="all, delete-orphan")

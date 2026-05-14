@@ -11,6 +11,7 @@ from vibe_kanban_clone.db.base import Base
 if TYPE_CHECKING:
     from vibe_kanban_clone.models.skill import Skill
     from vibe_kanban_clone.models.task import Task
+    from vibe_kanban_clone.models.task_run import TaskRun
 
 
 class Agent(Base):
@@ -26,3 +27,4 @@ class Agent(Base):
 
     skills: Mapped[list[Skill]] = relationship(secondary="agent_skills", back_populates="agents")
     tasks: Mapped[list[Task]] = relationship(back_populates="assigned_agent")
+    runs: Mapped[list[TaskRun]] = relationship(back_populates="agent")

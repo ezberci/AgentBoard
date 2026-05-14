@@ -1,5 +1,6 @@
 """Task routes."""
 
+import asyncio
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,10 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from vibe_kanban_clone.api.deps import get_session
 from vibe_kanban_clone.api.routes.ws import broadcast_project
+from vibe_kanban_clone.db.engine import async_session_factory
 from vibe_kanban_clone.schemas.task import TaskCreate, TaskMove, TaskRead, TaskUpdate
 from vibe_kanban_clone.schemas.task_comment import TaskCommentCreate, TaskCommentRead
+from vibe_kanban_clone.schemas.task_run import TaskRunRead
 from vibe_kanban_clone.services import comments as comments_service
 from vibe_kanban_clone.services import projects as projects_service
+from vibe_kanban_clone.services import runs as runs_service
 from vibe_kanban_clone.services import tasks as tasks_service
 
 router = APIRouter()
@@ -134,3 +138,43 @@ async def create_comment(
         TaskCommentRead.model_validate(comment).model_dump(mode="json"),
     )
     return comment
+
+
+@router.post("/tasks/{task_id}/run", status_code=202)
+async def run_task(
+    task_id: int,
+    data: dict,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict:
+    """Start a task execution run."""
+    task = await tasks_service.get_task(session, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    model_id = data.get("model_id")
+    prompt = data.get("prompt", task.description or task.title)
+    if model_id is None:
+        raise HTTPException(status_code=400, detail="model_id is required")
+
+    asyncio.create_task(
+        runs_service.execute_task_run(
+            async_session_factory,
+            task_id,
+            model_id,
+            prompt,
+        )
+    )
+
+    return {"status": "started", "task_id": task_id}
+
+
+@router.get("/tasks/{task_id}/runs", response_model=list[TaskRunRead])
+async def list_task_runs(
+    task_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[TaskRunRead]:
+    """List execution runs for a task."""
+    task = await tasks_service.get_task(session, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return await runs_service.list_task_runs(session, task_id)

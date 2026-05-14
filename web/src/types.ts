@@ -56,3 +56,28 @@ export interface TaskComment {
   body: string;
   created_at: string;
 }
+
+export interface Model {
+  id: number;
+  name: string;
+  provider: string;
+  model_id: string;
+  api_key_env: string;
+  base_url?: string;
+  is_enabled: boolean;
+  created_at: string;
+}
+
+export interface TaskRun {
+  id: number;
+  task_id: number;
+  model_id?: number;
+  agent_id?: number;
+  status: string;
+  prompt?: string;
+  output?: string;
+  usage?: Record<string, unknown>;
+  started_at?: string;
+  finished_at?: string;
+  error?: string;
+}

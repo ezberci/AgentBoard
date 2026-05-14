@@ -88,6 +88,23 @@ export function useBoard(projectId: number | null) {
             queryClient.invalidateQueries({ queryKey: ["tasks", comment.task_id] });
             break;
           }
+          case "run.started": {
+            const { run_id, task_id } = msg.payload as { run_id: number; task_id: number };
+            queryClient.setQueryData(["active_run", task_id], run_id);
+            break;
+          }
+          case "run.token": {
+            const { run_id, token } = msg.payload as { run_id: number; token: string };
+            queryClient.setQueryData<string>(["run_tokens", run_id], (old) => (old ?? "") + token);
+            break;
+          }
+          case "run.finished": {
+            const run = msg.payload as { run_id: number; task_id: number; status: string };
+            queryClient.setQueryData(["active_run", run.task_id], null);
+            queryClient.invalidateQueries({ queryKey: ["tasks", run.task_id] });
+            queryClient.invalidateQueries({ queryKey: ["tasks", run.task_id, "runs"] });
+            break;
+          }
           case "column.created":
           case "column.updated":
           case "column.deleted":

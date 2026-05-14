@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Board } from "@/pages/Board";
 import { Agents } from "@/pages/Agents";
 import { Skills } from "@/pages/Skills";
+import { Models } from "@/pages/Models";
 
-type Page = "board" | "agents" | "skills";
+type Page = "board" | "agents" | "skills" | "models";
 
 export function App() {
   const [page, setPage] = useState<Page>("board");
@@ -21,12 +22,16 @@ export function App() {
         <NavButton active={page === "skills"} onClick={() => setPage("skills")}>
           Skills
         </NavButton>
+        <NavButton active={page === "models"} onClick={() => setPage("models")}>
+          Models
+        </NavButton>
       </nav>
 
       <main className="flex-1 overflow-auto">
         {page === "board" && <Board />}
         {page === "agents" && <Agents />}
         {page === "skills" && <Skills />}
+        {page === "models" && <Models />}
       </main>
     </div>
   );

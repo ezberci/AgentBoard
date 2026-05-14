@@ -1,5 +1,5 @@
 from sqlalchemy import event
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from vibe_kanban_clone.config import settings
@@ -9,6 +9,8 @@ engine = create_async_engine(
     connect_args={"timeout": 5.0},
     poolclass=StaticPool,
 )
+
+async_session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
 
 @event.listens_for(engine.sync_engine, "connect")

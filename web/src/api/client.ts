@@ -1,4 +1,4 @@
-import type { Project, Column, Task, Agent, Skill, TaskComment } from "@/types";
+import type { Project, Column, Task, Agent, Skill, TaskComment, Model, TaskRun } from "@/types";
 
 const BASE_URL = "http://localhost:8765/api";
 
@@ -73,6 +73,18 @@ export const api = {
   updateSkill: (id: number, payload: { name?: string; description?: string; instructions?: string; allowed_tools?: unknown[] }) =>
     fetchJson<Skill>(`/skills/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
   deleteSkill: (id: number) => fetchJson<void>(`/skills/${id}`, { method: "DELETE" }),
+
+  getModels: () => fetchJson<Model[]>("/models"),
+  getModel: (id: number) => fetchJson<Model>(`/models/${id}`),
+  createModel: (payload: { name: string; provider: string; model_id: string; api_key_env: string; base_url?: string; is_enabled?: boolean }) =>
+    fetchJson<Model>("/models", { method: "POST", body: JSON.stringify(payload) }),
+  updateModel: (id: number, payload: Partial<Model>) =>
+    fetchJson<Model>(`/models/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteModel: (id: number) => fetchJson<void>(`/models/${id}`, { method: "DELETE" }),
+  modelsHealth: () => fetchJson<{ id: number; name: string; env_var: string; env_present: boolean }[]>("/models/health"),
+  runTask: (id: number, payload: { model_id: number; prompt?: string }) =>
+    fetchJson<{ status: string; task_id: number }>(`/tasks/${id}/run`, { method: "POST", body: JSON.stringify(payload) }),
+  getTaskRuns: (id: number) => fetchJson<TaskRun[]>(`/tasks/${id}/runs`),
 
   health: () => fetchJson<{ status: string }>("/health"),
 };

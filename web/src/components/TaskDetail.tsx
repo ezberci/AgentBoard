@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTaskDetail, useUpdateTask, useAddComment } from "@/hooks/useTaskDetail";
 import { useAgents } from "@/hooks/useAgents";
-
+import { useModels } from "@/hooks/useModels";
+import { useTaskRuns } from "@/hooks/useTaskRuns";
+import { api } from "@/api/client";
 
 interface TaskDetailProps {
   taskId: number | null;
@@ -27,16 +31,43 @@ function formatDate(iso: string | undefined): string {
   return new Date(iso).toLocaleString();
 }
 
+function relativeTime(iso: string | undefined): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.round(diffMs / 1000);
+  const diffMin = Math.round(diffSec / 60);
+  const diffHour = Math.round(diffMin / 60);
+  const diffDay = Math.round(diffHour / 24);
+  if (diffSec < 60) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHour < 24) return `${diffHour}h ago`;
+  if (diffDay < 30) return `${diffDay}d ago`;
+  return date.toLocaleDateString();
+}
+
 export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
+  const queryClient = useQueryClient();
   const { data: task, isLoading } = useTaskDetail(taskId);
   const { data: agents } = useAgents();
+  const { data: models } = useModels();
+  const { data: runs } = useTaskRuns(taskId);
   const updateTask = useUpdateTask();
   const addComment = useAddComment();
   const drawerRef = useRef<HTMLDivElement>(null);
+  const commentsEndRef = useRef<HTMLDivElement>(null);
+  const runEndRef = useRef<HTMLDivElement>(null);
 
   const [commentAuthor, setCommentAuthor] = useState("");
   const [commentBody, setCommentBody] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState<number | "">("");
+  const [runPrompt, setRunPrompt] = useState("");
+  const [isRunning, setIsRunning] = useState(false);
+
+  const activeRunId = taskId != null ? queryClient.getQueryData<number | null>(["active_run", taskId]) : null;
+  const streamingOutput = activeRunId != null ? queryClient.getQueryData<string>(["run_tokens", activeRunId]) ?? "" : "";
 
   useEffect(() => {
     if (taskId !== null) {
@@ -55,6 +86,24 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
     }
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (task?.comments && task.comments.length > 0) {
+      commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [task?.comments?.length]);
+
+  useEffect(() => {
+    if (streamingOutput) {
+      runEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [streamingOutput]);
+
+  useEffect(() => {
+    if (task) {
+      setRunPrompt(task.description || task.title);
+    }
+  }, [task?.id]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -87,6 +136,16 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
         },
       }
     );
+  };
+
+  const handleRunTask = async () => {
+    if (!task || !selectedModelId) return;
+    setIsRunning(true);
+    try {
+      await api.runTask(task.id, { model_id: Number(selectedModelId), prompt: runPrompt });
+    } finally {
+      setIsRunning(false);
+    }
   };
 
   return (
@@ -132,7 +191,9 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
                     </span>
                   </div>
                   {task.description && (
-                    <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-300">{task.description}</p>
+                    <div className="mt-2 prose prose-invert prose-sm max-w-none">
+                      <ReactMarkdown>{task.description}</ReactMarkdown>
+                    </div>
                   )}
                 </div>
 
@@ -169,8 +230,75 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
                     <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-fg">
                       Result
                     </h4>
-                    <div className="rounded-md border border-border bg-surface-sunken p-3 text-sm text-zinc-300">
-                      {task.result}
+                    <div className="rounded-md border border-border bg-surface-sunken p-3 text-sm text-zinc-300 prose prose-invert prose-sm max-w-none">
+                      <ReactMarkdown>{task.result}</ReactMarkdown>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-fg">
+                    Run
+                  </h4>
+                  <div className="flex flex-col gap-2">
+                    <select
+                      value={selectedModelId}
+                      onChange={(e) => setSelectedModelId(e.target.value ? Number(e.target.value) : "")}
+                      className="w-full rounded-md border border-border bg-surface-sunken px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+                    >
+                      <option value="">Select model…</option>
+                      {models?.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </select>
+                    <textarea
+                      value={runPrompt}
+                      onChange={(e) => setRunPrompt(e.target.value)}
+                      rows={2}
+                      className="resize-none rounded-md border border-border bg-surface-sunken px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleRunTask}
+                        disabled={isRunning || !selectedModelId}
+                        className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                      >
+                        {isRunning ? "Running…" : "Run"}
+                      </button>
+                    </div>
+                    {activeRunId != null && streamingOutput && (
+                      <div className="rounded-md border border-border bg-surface-sunken p-3 text-sm text-zinc-300 prose prose-invert prose-sm max-w-none">
+                        <ReactMarkdown>{streamingOutput}</ReactMarkdown>
+                        <div ref={runEndRef} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {runs && runs.length > 0 && (
+                  <div>
+                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-fg">
+                      Run History
+                    </h4>
+                    <div className="flex flex-col gap-2">
+                      {runs.map((run) => (
+                        <div key={run.id} className="rounded-md border border-border bg-surface-sunken p-2 text-xs">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={`font-semibold ${run.status === "completed" ? "text-green-400" : run.status === "failed" ? "text-red-400" : "text-amber-400"}`}>
+                              {run.status}
+                            </span>
+                            <span className="text-muted-fg">{formatDate(run.started_at)}</span>
+                          </div>
+                          {run.output && (
+                            <p className="mt-1 line-clamp-3 text-zinc-300">{run.output}</p>
+                          )}
+                          {run.error && (
+                            <p className="mt-1 text-red-400">{run.error}</p>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -179,26 +307,30 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
                   <h4 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-fg">
                     Comments
                   </h4>
-                  <div className="flex flex-col gap-3">
+                  <div className="relative flex flex-col gap-0">
+                    {task.comments && task.comments.length > 0 && (
+                      <div className="absolute left-[11px] top-2 bottom-2 w-px bg-border" />
+                    )}
                     {task.comments?.map((comment) => (
-                      <div
-                        key={comment.id}
-                        className="rounded-lg border border-border bg-surface-sunken p-3"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-zinc-200">
-                            {comment.author}
-                          </span>
-                          <span className="text-[10px] text-muted-fg">
-                            {formatDate(comment.created_at)}
-                          </span>
+                      <div key={comment.id} className="relative flex gap-3 py-2">
+                        <div className="relative z-10 mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-accent" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-semibold text-zinc-200">
+                              {comment.author}
+                            </span>
+                            <span className="text-[10px] text-muted-fg" title={formatDate(comment.created_at)}>
+                              {relativeTime(comment.created_at)}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-sm text-zinc-300 whitespace-pre-wrap">{comment.body}</p>
                         </div>
-                        <p className="mt-1 text-sm text-zinc-300">{comment.body}</p>
                       </div>
                     ))}
                     {(!task.comments || task.comments.length === 0) && (
                       <div className="text-xs text-muted-fg">No comments yet.</div>
                     )}
+                    <div ref={commentsEndRef} />
                   </div>
 
                   <form onSubmit={handleAddComment} className="mt-4 flex flex-col gap-2">
