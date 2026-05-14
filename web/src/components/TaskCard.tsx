@@ -6,6 +6,7 @@ import { resolveAgentColor } from "@/lib/agentColors";
 interface TaskCardProps {
   task: Task;
   agentColor?: string;
+  phase?: 1 | 2 | 3 | 4;
   onClick?: () => void;
   onFocus?: () => void;
 }
@@ -24,7 +25,23 @@ function priorityClass(priority: number): string {
   return "bg-zinc-500/20 text-zinc-400";
 }
 
-export function TaskCard({ task, agentColor, onClick, onFocus }: TaskCardProps) {
+function PhaseRibbon({ phase }: { phase?: 1 | 2 | 3 | 4 }) {
+  if (!phase) return null;
+  return (
+    <div className="mt-2 flex gap-0.5">
+      {[1, 2, 3, 4].map((i) => (
+        <div
+          key={i}
+          className={`h-1 flex-1 rounded-full ${
+            i <= phase ? "bg-accent" : "bg-zinc-700"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function TaskCard({ task, agentColor, phase, onClick, onFocus }: TaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `task-${task.id}`,
     data: { task },
@@ -66,6 +83,7 @@ export function TaskCard({ task, agentColor, onClick, onFocus }: TaskCardProps) 
       {task.description && (
         <p className="mt-1 line-clamp-2 text-xs text-muted-fg">{task.description}</p>
       )}
+      <PhaseRibbon phase={phase} />
       <div className="mt-2 flex items-center gap-2">
         {resolvedColor && (
           <span

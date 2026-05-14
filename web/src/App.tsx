@@ -3,8 +3,9 @@ import { Board } from "@/pages/Board";
 import { Agents } from "@/pages/Agents";
 import { Skills } from "@/pages/Skills";
 import { Models } from "@/pages/Models";
+import { Settings } from "@/pages/Settings";
 
-type Page = "board" | "agents" | "skills" | "models";
+type Page = "board" | "agents" | "skills" | "models" | "settings";
 
 export function App() {
   const [page, setPage] = useState<Page>("board");
@@ -25,6 +26,11 @@ export function App() {
         <NavButton active={page === "models"} onClick={() => setPage("models")}>
           Models
         </NavButton>
+        <div className="ml-auto">
+          <NavButton active={page === "settings"} onClick={() => setPage("settings")}>
+            Settings
+          </NavButton>
+        </div>
       </nav>
 
       <main className="flex-1 overflow-auto">
@@ -32,6 +38,7 @@ export function App() {
         {page === "agents" && <Agents />}
         {page === "skills" && <Skills />}
         {page === "models" && <Models />}
+        {page === "settings" && <Settings />}
       </main>
     </div>
   );

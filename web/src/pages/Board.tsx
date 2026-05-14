@@ -7,7 +7,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { useQueryClient } from "@tanstack/react-query";
-import { useProjects } from "@/hooks/useProjects";
+import { useProjects, useCreateProject } from "@/hooks/useProjects";
 import { useBoard } from "@/hooks/useBoard";
 import { useAgents } from "@/hooks/useAgents";
 import { Column } from "@/components/Column";
@@ -48,12 +48,18 @@ export function Board() {
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [focusedTaskId, setFocusedTaskId] = useState<number | null>(null);
   const { data: agents } = useAgents();
+  const createProject = useCreateProject();
 
   const [viewMode, setViewMode] = useState<ViewMode>("classic");
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<number[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter[]>([]);
   const [agentFilter, setAgentFilter] = useState<number[]>([]);
+
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [showAddColumn, setShowAddColumn] = useState(false);
+  const [newColumnName, setNewColumnName] = useState("");
 
   const agentMap = new Map<number, string>();
   for (const agent of agents ?? []) {
@@ -251,6 +257,27 @@ export function Board() {
     return "Done";
   };
 
+  const handleCreateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProjectName.trim()) return;
+    const project = await createProject.mutateAsync({ name: newProjectName.trim() });
+    setNewProjectName("");
+    setShowNewProject(false);
+    setSelectedProjectId(project.id);
+  };
+
+  const handleCreateColumn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newColumnName.trim() || !selectedProjectId) return;
+    await api.createColumn(selectedProjectId, {
+      name: newColumnName.trim(),
+      position: sortedColumns.length,
+    });
+    queryClient.invalidateQueries({ queryKey: ["projects", selectedProjectId, "columns"] });
+    setNewColumnName("");
+    setShowAddColumn(false);
+  };
+
   return (
     <div className="flex h-full flex-col bg-surface-sunken text-zinc-100">
       <header className="flex items-center gap-4 border-b border-border bg-surface px-6 py-3">
@@ -271,6 +298,44 @@ export function Board() {
         </div>
         {projectsLoading && <span className="text-xs text-muted-fg">Loading projects…</span>}
         {projectsError && <span className="text-xs text-red-400">Failed to load projects</span>}
+
+        <div className="ml-auto flex items-center gap-2">
+          {showNewProject ? (
+            <form onSubmit={handleCreateProject} className="flex items-center gap-2">
+              <input
+                autoFocus
+                placeholder="Project name"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                className="w-40 rounded-md border border-border bg-surface-sunken px-3 py-1.5 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+              />
+              <button
+                type="submit"
+                disabled={createProject.isPending || !newProjectName.trim()}
+                className="rounded bg-accent px-3 py-1.5 text-xs font-medium text-white transition hover:bg-accent/90 disabled:opacity-50"
+              >
+                Create
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNewProject(false);
+                  setNewProjectName("");
+                }}
+                className="rounded border border-border px-3 py-1.5 text-xs text-muted-fg transition hover:text-zinc-200"
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <button
+              onClick={() => setShowNewProject(true)}
+              className="rounded border border-border px-3 py-1.5 text-xs font-medium text-zinc-200 transition hover:bg-surface-raised"
+            >
+              + New Project
+            </button>
+          )}
+        </div>
       </header>
 
       {selectedProjectId && (
@@ -327,20 +392,57 @@ export function Board() {
               </button>
             ))}
           </div>
-          <div className="ml-auto flex gap-1">
-            {(["classic", "dense", "swimlanes"] as ViewMode[]).map((v) => (
+          <div className="ml-auto flex items-center gap-2">
+            {showAddColumn ? (
+              <form onSubmit={handleCreateColumn} className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  placeholder="Column name"
+                  value={newColumnName}
+                  onChange={(e) => setNewColumnName(e.target.value)}
+                  className="w-32 rounded-md border border-border bg-surface-sunken px-2 py-1 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+                />
+                <button
+                  type="submit"
+                  disabled={!newColumnName.trim()}
+                  className="rounded bg-accent px-2 py-1 text-[10px] font-medium text-white transition hover:bg-accent/90 disabled:opacity-50"
+                >
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddColumn(false);
+                    setNewColumnName("");
+                  }}
+                  className="rounded border border-border px-2 py-1 text-[10px] text-muted-fg transition hover:text-zinc-200"
+                >
+                  Cancel
+                </button>
+              </form>
+            ) : (
               <button
-                key={v}
-                onClick={() => setViewMode(v)}
-                className={`rounded px-2 py-0.5 text-[10px] font-semibold capitalize transition ${
-                  viewMode === v
-                    ? "bg-accent text-white"
-                    : "border border-border text-muted-fg hover:text-zinc-200"
-                }`}
+                onClick={() => setShowAddColumn(true)}
+                className="rounded border border-border px-2 py-1 text-[10px] font-medium text-zinc-200 transition hover:bg-surface-raised"
               >
-                {v}
+                + Add Column
               </button>
-            ))}
+            )}
+            <div className="flex gap-1">
+              {(["classic", "dense", "swimlanes"] as ViewMode[]).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setViewMode(v)}
+                  className={`rounded px-2 py-0.5 text-[10px] font-semibold capitalize transition ${
+                    viewMode === v
+                      ? "bg-accent text-white"
+                      : "border border-border text-muted-fg hover:text-zinc-200"
+                  }`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -361,6 +463,8 @@ export function Board() {
                   column={col}
                   tasks={tasksByColumn.get(col.id) ?? []}
                   agentMap={agentMap}
+                  projectId={selectedProjectId}
+                  totalColumns={sortedColumns.length}
                   onTaskClick={(taskId) => setSelectedTaskId(taskId)}
                 />
               ))}
