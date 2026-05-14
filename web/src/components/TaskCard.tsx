@@ -69,7 +69,7 @@ export function TaskCard({ task, agentColor, phase, draggable = true, onClick, o
         }
       }}
       onClick={onClick}
-      className="group relative rounded-lg border border-border bg-surface-raised p-3 shadow-sm transition hover:shadow-md cursor-pointer outline-none focus:ring-2 focus:ring-accent"
+      className="group relative rounded-lg border border-border bg-surface-raised p-4 shadow-sm transition hover:shadow-md cursor-pointer outline-none focus:ring-2 focus:ring-accent"
     >
       {onDelete && (
         <button
@@ -83,19 +83,19 @@ export function TaskCard({ task, agentColor, phase, draggable = true, onClick, o
           title="Delete task"
           aria-label="Delete task"
         >
-          🗑
+          <span className="text-base">🗑</span>
         </button>
       )}
       <div className="flex items-start justify-between gap-2 pr-6">
-        <h4 className="text-sm font-medium text-zinc-100">{task.title}</h4>
+        <h4 className="text-base font-medium text-zinc-100">{task.title}</h4>
         <span
-          className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${priorityClass(task.priority)}`}
+          className={`shrink-0 rounded px-2.5 py-1 text-sm font-semibold uppercase tracking-wide ${priorityClass(task.priority)}`}
         >
           {priorityLabel(task.priority)}
         </span>
       </div>
       {task.description && (
-        <p className="mt-1 line-clamp-2 text-xs text-muted-fg">{task.description}</p>
+        <p className="mt-1 line-clamp-2 text-sm text-muted-fg">{task.description}</p>
       )}
       <PhaseRibbon phase={phase} />
       <div className="mt-2 flex items-center gap-2">

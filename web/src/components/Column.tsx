@@ -101,7 +101,7 @@ export function Column({ column, tasks, agentMap, totalColumns, projectId, onTas
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-72 shrink-0 flex-col rounded-xl border bg-surface p-3 transition ${
+      className={`flex w-80 shrink-0 flex-col rounded-xl border bg-surface p-4 transition ${
         isOver ? "border-accent ring-1 ring-accent" : "border-border"
       }`}
     >
@@ -113,12 +113,12 @@ export function Column({ column, tasks, agentMap, totalColumns, projectId, onTas
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               onBlur={handleRenameSubmit}
-              className="w-full rounded-md border border-border bg-surface-sunken px-2 py-1 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+              className="w-full rounded-md border border-border bg-surface-sunken px-3 py-1.5 text-base text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
             />
           </form>
         ) : (
           <h3
-            className="cursor-pointer text-sm font-semibold text-zinc-200 hover:text-zinc-100"
+            className="cursor-pointer text-base font-semibold text-zinc-200 hover:text-zinc-100"
             onClick={() => {
               setEditName(column.name);
               setIsEditingName(true);
@@ -129,13 +129,13 @@ export function Column({ column, tasks, agentMap, totalColumns, projectId, onTas
           </h3>
         )}
         <div className="flex items-center gap-2">
-          <span className="rounded bg-surface-sunken px-1.5 py-0.5 text-xs font-medium text-muted-fg">
+          <span className="rounded bg-surface-sunken px-2 py-0.5 text-sm font-medium text-muted-fg">
             {tasks.length}
           </span>
           <div className="relative">
             <button
               onClick={() => setShowMenu((s) => !s)}
-              className="rounded px-1 text-xs text-muted-fg hover:text-zinc-200"
+              className="rounded px-1.5 text-sm text-muted-fg hover:text-zinc-200"
               title="Column actions"
             >
               ⋮
@@ -149,7 +149,7 @@ export function Column({ column, tasks, agentMap, totalColumns, projectId, onTas
                     setEditName(column.name);
                     setIsEditingName(true);
                   }}
-                  className="block w-full px-3 py-2 text-left text-xs text-zinc-200 hover:bg-surface-raised"
+                  className="block w-full px-3 py-2 text-left text-sm text-zinc-200 hover:bg-surface-raised"
                 >
                   Rename
                 </button>
@@ -161,7 +161,7 @@ export function Column({ column, tasks, agentMap, totalColumns, projectId, onTas
                       deleteColumn.mutate();
                     }
                   }}
-                  className="block w-full px-3 py-2 text-left text-xs text-red-400 hover:bg-surface-raised"
+                  className="block w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-surface-raised"
                 >
                   Delete
                 </button>
@@ -202,7 +202,7 @@ export function Column({ column, tasks, agentMap, totalColumns, projectId, onTas
             placeholder="Task title"
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
-            className="mb-2 w-full rounded-md border border-border bg-surface-sunken px-2 py-1.5 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+            className="mb-2 w-full rounded-md border border-border bg-surface-sunken px-3 py-2 text-base text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
           />
           <div className="mb-2 flex gap-1">
             {[1, 2, 3, 4].map((p) => (
@@ -210,7 +210,7 @@ export function Column({ column, tasks, agentMap, totalColumns, projectId, onTas
                 key={p}
                 type="button"
                 onClick={() => setNewPriority(p)}
-                className={`flex-1 rounded px-2 py-1 text-[10px] font-semibold uppercase ${
+                className={`flex-1 rounded px-3 py-1.5 text-sm font-semibold uppercase ${
                   newPriority === p
                     ? p === 1
                       ? "bg-red-500/30 text-red-400"
@@ -230,7 +230,7 @@ export function Column({ column, tasks, agentMap, totalColumns, projectId, onTas
             <button
               type="submit"
               disabled={createTask.isPending || !newTitle.trim()}
-              className="rounded bg-accent px-3 py-1 text-xs font-medium text-white transition hover:bg-accent/90 disabled:opacity-50"
+              className="rounded bg-accent px-4 py-2 text-base font-medium text-white transition hover:bg-accent/90 disabled:opacity-50"
             >
               Add
             </button>
@@ -241,7 +241,7 @@ export function Column({ column, tasks, agentMap, totalColumns, projectId, onTas
                 setNewTitle("");
                 setNewPriority(2);
               }}
-              className="rounded border border-border px-3 py-1 text-xs text-muted-fg transition hover:text-zinc-200"
+              className="rounded border border-border px-4 py-2 text-base text-muted-fg transition hover:text-zinc-200"
             >
               Cancel
             </button>
@@ -250,7 +250,7 @@ export function Column({ column, tasks, agentMap, totalColumns, projectId, onTas
       ) : (
         <button
           onClick={() => setIsAdding(true)}
-          className="mt-2 flex items-center gap-1 rounded-lg border border-dashed border-border px-3 py-2 text-xs text-muted-fg transition hover:border-zinc-600 hover:text-zinc-300"
+          className="mt-2 flex items-center gap-1 rounded-lg border border-dashed border-border px-4 py-2.5 text-base text-muted-fg transition hover:border-zinc-600 hover:text-zinc-300"
         >
           <span className="text-sm leading-none">+</span> Add task
         </button>

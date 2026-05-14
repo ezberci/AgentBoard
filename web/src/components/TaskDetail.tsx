@@ -152,13 +152,13 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
     >
       <div
         ref={drawerRef}
-        className={`absolute right-0 top-0 h-full w-full max-w-md border-l border-border bg-surface shadow-2xl transition-transform duration-300 ${
+        className={`absolute right-0 top-0 h-full w-full max-w-xl border-l border-border bg-surface shadow-2xl transition-transform duration-300 ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
-            <h2 className="text-lg font-bold text-zinc-100">Task Detail</h2>
+            <h2 className="text-xl font-bold text-zinc-100">Task Detail</h2>
             <div className="flex items-center gap-2">
               {onDelete && (
                 <button
@@ -168,17 +168,17 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
                       onClose();
                     }
                   }}
-                  className="rounded-md px-3 py-1 text-sm text-red-400 transition hover:bg-red-500/20"
+                  className="rounded-md px-4 py-1.5 text-base text-red-400 transition hover:bg-red-500/20"
                 >
                   Delete
                 </button>
               )}
               <button
                 onClick={onClose}
-                className="rounded-md p-1 text-muted-fg hover:text-zinc-100"
+                className="rounded-md p-2 text-muted-fg hover:text-zinc-100"
                 aria-label="Close"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M18 6 6 18M6 6l12 12" />
                 </svg>
               </button>
@@ -187,20 +187,20 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
 
           <div className="flex-1 overflow-y-auto px-6 py-4">
             {isLoading || !task ? (
-              <div className="text-muted-fg">Loading…</div>
+              <div className="text-base text-muted-fg">Loading…</div>
             ) : (
               <div className="flex flex-col gap-6">
                 <div>
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-xl font-semibold text-zinc-100">{task.title}</h3>
+                    <h3 className="text-2xl font-semibold text-zinc-100">{task.title}</h3>
                     <span
-                      className={`shrink-0 rounded px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${priorityClass(task.priority)}`}
+                      className={`shrink-0 rounded px-2.5 py-1 text-sm font-semibold uppercase tracking-wide ${priorityClass(task.priority)}`}
                     >
                       {priorityLabel(task.priority)}
                     </span>
                   </div>
                   {task.description && (
-                    <div className="mt-2 prose prose-invert prose-sm max-w-none">
+                    <div className="mt-2 prose prose-invert prose-base max-w-none">
                       <ReactMarkdown components={{ a: MarkdownLink }}>{task.description}</ReactMarkdown>
                     </div>
                   )}
@@ -208,13 +208,13 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-fg">
+                    <label className="mb-1 block text-sm font-semibold uppercase tracking-wide text-muted-fg">
                       Assigned Agent
                     </label>
                     <select
                       value={task.assigned_agent_id ?? ""}
                       onChange={handleAssignAgent}
-                      className="w-full rounded-md border border-border bg-surface-sunken px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+                      className="w-full rounded-md border border-border bg-surface-sunken px-4 py-2.5 text-base text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
                     >
                       <option value="">Unassigned</option>
                       {agents?.map((agent) => (
@@ -225,10 +225,10 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
                     </select>
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-fg">
+                    <label className="mb-1 block text-sm font-semibold uppercase tracking-wide text-muted-fg">
                       Claimed At
                     </label>
-                    <div className="rounded-md border border-border bg-surface-sunken px-3 py-2 text-sm text-zinc-300">
+                    <div className="rounded-md border border-border bg-surface-sunken px-4 py-2.5 text-base text-zinc-300">
                       {formatDate(task.claimed_at)}
                     </div>
                   </div>
@@ -236,24 +236,24 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
 
                 {task.result && (
                   <div>
-                    <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-fg">
+                    <h4 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-fg">
                       Result
                     </h4>
-                    <div className="rounded-md border border-border bg-surface-sunken p-3 text-sm text-zinc-300 prose prose-invert prose-sm max-w-none">
+                    <div className="rounded-md border border-border bg-surface-sunken p-4 text-base text-zinc-300 prose prose-invert prose-base max-w-none">
                       <ReactMarkdown components={{ a: MarkdownLink }}>{task.result}</ReactMarkdown>
                     </div>
                   </div>
                 )}
 
                 <div>
-                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-fg">
+                  <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-fg">
                     Run
                   </h4>
                   <div className="flex flex-col gap-2">
                     <select
                       value={selectedModelId}
                       onChange={(e) => setSelectedModelId(e.target.value ? Number(e.target.value) : "")}
-                      className="w-full rounded-md border border-border bg-surface-sunken px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+                      className="w-full rounded-md border border-border bg-surface-sunken px-4 py-2.5 text-base text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
                     >
                       <option value="">Select model…</option>
                       {models?.map((m) => (
@@ -265,20 +265,20 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
                     <textarea
                       value={runPrompt}
                       onChange={(e) => setRunPrompt(e.target.value)}
-                      rows={2}
-                      className="resize-none rounded-md border border-border bg-surface-sunken px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+                      rows={3}
+                      className="resize-none rounded-md border border-border bg-surface-sunken px-4 py-2.5 text-base text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
                     />
                     <div className="flex justify-end">
                       <button
                         onClick={handleRunTask}
                         disabled={isRunning || !selectedModelId}
-                        className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                        className="rounded-md bg-accent px-5 py-2.5 text-base font-medium text-white hover:opacity-90 disabled:opacity-50"
                       >
                         {isRunning ? "Running…" : "Run"}
                       </button>
                     </div>
                     {activeRunId != null && streamingOutput && (
-                      <div className="rounded-md border border-border bg-surface-sunken p-3 text-sm text-zinc-300 prose prose-invert prose-sm max-w-none">
+                      <div className="rounded-md border border-border bg-surface-sunken p-4 text-base text-zinc-300 prose prose-invert prose-base max-w-none">
                         <ReactMarkdown components={{ a: MarkdownLink }}>{streamingOutput}</ReactMarkdown>
                         <div ref={runEndRef} />
                       </div>
@@ -288,12 +288,12 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
 
                 {runs && runs.length > 0 && (
                   <div>
-                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-fg">
+                    <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-fg">
                       Run History
                     </h4>
                     <div className="flex flex-col gap-2">
                       {runs.map((run) => (
-                        <div key={run.id} className="rounded-md border border-border bg-surface-sunken p-2 text-xs">
+                        <div key={run.id} className="rounded-md border border-border bg-surface-sunken p-3 text-sm">
                           <div className="flex items-center justify-between gap-2">
                             <span className={`font-semibold ${run.status === "completed" ? "text-green-400" : run.status === "failed" ? "text-red-400" : "text-amber-400"}`}>
                               {run.status}
@@ -325,19 +325,19 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
                         <div className="relative z-10 mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-accent" />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-semibold text-zinc-200">
+                            <span className="text-sm font-semibold text-zinc-200">
                               {comment.author}
                             </span>
-                            <span className="text-[10px] text-muted-fg" title={formatDate(comment.created_at)}>
+                            <span className="text-sm text-muted-fg" title={formatDate(comment.created_at)}>
                               {relativeTime(comment.created_at)}
                             </span>
                           </div>
-                          <p className="mt-0.5 text-sm text-zinc-300 whitespace-pre-wrap">{comment.body}</p>
+                          <p className="mt-0.5 text-base text-zinc-300 whitespace-pre-wrap">{comment.body}</p>
                         </div>
                       </div>
                     ))}
                     {(!task.comments || task.comments.length === 0) && (
-                      <div className="text-xs text-muted-fg">No comments yet.</div>
+                      <div className="text-sm text-muted-fg">No comments yet.</div>
                     )}
                     <div ref={commentsEndRef} />
                   </div>
@@ -346,7 +346,7 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
                     <input
                       type="text"
                       placeholder="Your name"
-                      className="rounded-md border border-border bg-surface-sunken px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+                      className="rounded-md border border-border bg-surface-sunken px-4 py-2.5 text-base text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
                       value={commentAuthor}
                       onChange={(e) => setCommentAuthor(e.target.value)}
                       required
@@ -354,7 +354,7 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
                     <textarea
                       placeholder="Write a comment…"
                       rows={3}
-                      className="resize-none rounded-md border border-border bg-surface-sunken px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+                      className="resize-none rounded-md border border-border bg-surface-sunken px-4 py-2.5 text-base text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
                       value={commentBody}
                       onChange={(e) => setCommentBody(e.target.value)}
                       required
@@ -363,7 +363,7 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
                       <button
                         type="submit"
                         disabled={addComment.isPending}
-                        className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                        className="rounded-md bg-accent px-5 py-2.5 text-base font-medium text-white hover:opacity-90 disabled:opacity-50"
                       >
                         Add Comment
                       </button>

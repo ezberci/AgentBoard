@@ -38,18 +38,18 @@ export function Skills() {
 
   return (
     <div className="mx-auto max-w-4xl p-6">
-      <h2 className="mb-6 text-2xl font-bold text-zinc-100">Skills</h2>
+      <h2 className="mb-6 text-3xl font-bold text-zinc-100">Skills</h2>
 
       <form
         onSubmit={handleCreate}
         className="mb-8 rounded-xl border border-border bg-surface p-4"
       >
-        <h3 className="mb-3 text-sm font-semibold text-zinc-200">Create Skill</h3>
+        <h3 className="mb-3 text-base font-semibold text-zinc-200">Create Skill</h3>
         <div className="flex flex-col gap-3">
           <input
             type="text"
             placeholder="Name"
-            className="rounded-md border border-border bg-surface-sunken px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+            className="rounded-md border border-border bg-surface-sunken px-4 py-2.5 text-base text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
@@ -57,28 +57,28 @@ export function Skills() {
           <input
             type="text"
             placeholder="Description (optional)"
-            className="rounded-md border border-border bg-surface-sunken px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+            className="rounded-md border border-border bg-surface-sunken px-4 py-2.5 text-base text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
           <input
             type="text"
             placeholder="Instructions (optional)"
-            className="rounded-md border border-border bg-surface-sunken px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+            className="rounded-md border border-border bg-surface-sunken px-4 py-2.5 text-base text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
           />
           <input
             type="text"
             placeholder="Allowed tools, comma-separated (optional)"
-            className="rounded-md border border-border bg-surface-sunken px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+            className="rounded-md border border-border bg-surface-sunken px-4 py-2.5 text-base text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
             value={allowedTools}
             onChange={(e) => setAllowedTools(e.target.value)}
           />
           <div className="flex justify-end">
             <button
               type="submit"
-              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+              className="rounded-md bg-accent px-5 py-2.5 text-base font-medium text-white hover:opacity-90 disabled:opacity-50"
               disabled={createSkill.isPending}
             >
               Create
@@ -88,7 +88,7 @@ export function Skills() {
       </form>
 
       {isLoading ? (
-        <div className="text-muted-fg">Loading skills…</div>
+        <div className="text-base text-muted-fg">Loading skills…</div>
       ) : (
         <div className="flex flex-col gap-4">
           {skills?.map((skill) => (
@@ -98,19 +98,19 @@ export function Skills() {
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                  <h3 className="text-base font-semibold text-zinc-100">{skill.name}</h3>
+                  <h3 className="text-lg font-semibold text-zinc-100">{skill.name}</h3>
                   {skill.description && (
-                    <p className="mt-1 text-xs text-muted-fg">{skill.description}</p>
+                    <p className="mt-1 text-sm text-muted-fg">{skill.description}</p>
                   )}
                   {skill.instructions && (
-                    <p className="mt-1 text-xs text-zinc-400">{skill.instructions}</p>
+                    <p className="mt-1 text-sm text-zinc-400">{skill.instructions}</p>
                   )}
                   {Array.isArray(skill.allowed_tools) && skill.allowed_tools.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {(skill.allowed_tools as unknown[]).map((tool: unknown, i: number) => (
                         <span
                           key={i}
-                          className="rounded bg-surface-sunken px-1.5 py-0.5 text-[10px] font-mono text-muted-fg"
+                          className="rounded bg-surface-sunken px-2.5 py-0.5 text-sm font-mono text-muted-fg"
                         >
                           {String(tool)}
                         </span>
@@ -121,16 +121,16 @@ export function Skills() {
                 <div className="flex items-center gap-2">
                   {confirmDelete === skill.id ? (
                     <>
-                      <span className="text-xs text-red-400">Are you sure?</span>
+                      <span className="text-sm text-red-400">Are you sure?</span>
                       <button
                         onClick={() => handleDelete(skill.id)}
-                        className="rounded-md bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+                        className="rounded-md bg-red-500 px-4 py-2 text-base font-medium text-white hover:opacity-90"
                       >
                         Yes
                       </button>
                       <button
                         onClick={() => setConfirmDelete(null)}
-                        className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-surface-raised"
+                        className="rounded-md border border-border px-4 py-2 text-base font-medium text-zinc-300 hover:bg-surface-raised"
                       >
                         No
                       </button>
@@ -138,7 +138,7 @@ export function Skills() {
                   ) : (
                     <button
                       onClick={() => setConfirmDelete(skill.id)}
-                      className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-surface-raised"
+                      className="rounded-md border border-border px-4 py-2 text-base font-medium text-red-400 hover:bg-surface-raised"
                     >
                       Delete
                     </button>
@@ -148,7 +148,7 @@ export function Skills() {
             </div>
           ))}
           {(!skills || skills.length === 0) && (
-            <div className="text-center text-sm text-muted-fg">No skills yet.</div>
+            <div className="text-center text-base text-muted-fg">No skills yet.</div>
           )}
         </div>
       )}

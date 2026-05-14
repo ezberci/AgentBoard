@@ -298,12 +298,12 @@ export function Board() {
   return (
     <div className="flex h-full flex-col bg-surface-sunken text-zinc-100">
       <header className="flex items-center gap-4 border-b border-border bg-surface px-6 py-3">
-        <h1 className="text-lg font-bold tracking-tight">Vibe Kanban</h1>
+        <h1 className="text-xl font-bold tracking-tight">Vibe Kanban</h1>
         <div className="flex items-center gap-2">
-          <label htmlFor="project-select" className="text-sm text-muted-fg">Project</label>
+          <label htmlFor="project-select" className="text-base text-muted-fg">Project</label>
           <select
             id="project-select"
-            className="rounded-md border border-border bg-surface-sunken px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-accent"
+            className="rounded-md border border-border bg-surface-sunken px-4 py-2 text-base outline-none focus:ring-2 focus:ring-accent"
             value={selectedProjectId ?? ""}
             onChange={(e) => setSelectedProjectId(e.target.value ? Number(e.target.value) : null)}
           >
@@ -313,8 +313,8 @@ export function Board() {
             ))}
           </select>
         </div>
-        {projectsLoading && <span className="text-xs text-muted-fg">Loading projects…</span>}
-        {projectsError && <span className="text-xs text-red-400">Failed to load projects</span>}
+        {projectsLoading && <span className="text-base text-muted-fg">Loading projects…</span>}
+        {projectsError && <span className="text-base text-red-400">Failed to load projects</span>}
 
         <div className="ml-auto flex items-center gap-2">
           {showNewProject ? (
@@ -324,12 +324,12 @@ export function Board() {
                 placeholder="Project name"
                 value={newProjectName}
                 onChange={(e) => setNewProjectName(e.target.value)}
-                className="w-40 rounded-md border border-border bg-surface-sunken px-3 py-1.5 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+                className="w-48 rounded-md border border-border bg-surface-sunken px-4 py-2 text-base text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
               />
               <button
                 type="submit"
                 disabled={createProject.isPending || !newProjectName.trim()}
-                className="rounded bg-accent px-3 py-1.5 text-xs font-medium text-white transition hover:bg-accent/90 disabled:opacity-50"
+                className="rounded bg-accent px-4 py-2 text-base font-medium text-white transition hover:bg-accent/90 disabled:opacity-50"
               >
                 Create
               </button>
@@ -339,7 +339,7 @@ export function Board() {
                   setShowNewProject(false);
                   setNewProjectName("");
                 }}
-                className="rounded border border-border px-3 py-1.5 text-xs text-muted-fg transition hover:text-zinc-200"
+                className="rounded border border-border px-4 py-2 text-base text-muted-fg transition hover:text-zinc-200"
               >
                 Cancel
               </button>
@@ -360,7 +360,7 @@ export function Board() {
           <input
             type="text"
             placeholder="Search tasks…"
-            className="w-48 rounded-md border border-border bg-surface-sunken px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-accent"
+            className="w-64 rounded-md border border-border bg-surface-sunken px-4 py-2 text-base outline-none focus:ring-2 focus:ring-accent"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -369,7 +369,7 @@ export function Board() {
               <button
                 key={p}
                 onClick={() => togglePriority(p)}
-                className={`rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition ${
+                className={`rounded px-3 py-1.5 text-sm font-semibold uppercase tracking-wide transition ${
                   priorityFilter.includes(p)
                     ? priorityClass(p)
                     : "border border-border text-muted-fg hover:text-zinc-200"
@@ -384,7 +384,7 @@ export function Board() {
               <button
                 key={s}
                 onClick={() => toggleStatus(s)}
-                className={`rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition ${
+                className={`rounded px-3 py-1.5 text-sm font-semibold uppercase tracking-wide transition ${
                   statusFilter.includes(s)
                     ? "bg-accent/20 text-accent"
                     : "border border-border text-muted-fg hover:text-zinc-200"
@@ -399,7 +399,7 @@ export function Board() {
               <button
                 key={a.id}
                 onClick={() => toggleAgent(a.id)}
-                className={`rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition ${
+                className={`rounded px-3 py-1.5 text-sm font-semibold uppercase tracking-wide transition ${
                   agentFilter.includes(a.id)
                     ? "bg-accent/20 text-accent"
                     : "border border-border text-muted-fg hover:text-zinc-200"
@@ -417,12 +417,12 @@ export function Board() {
                   placeholder="Column name"
                   value={newColumnName}
                   onChange={(e) => setNewColumnName(e.target.value)}
-                  className="w-32 rounded-md border border-border bg-surface-sunken px-2 py-1 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
+                  className="w-48 rounded-md border border-border bg-surface-sunken px-4 py-2 text-base text-zinc-100 outline-none focus:ring-2 focus:ring-accent"
                 />
                 <button
                   type="submit"
                   disabled={!newColumnName.trim()}
-                  className="rounded bg-accent px-2 py-1 text-[10px] font-medium text-white transition hover:bg-accent/90 disabled:opacity-50"
+                  className="rounded bg-accent px-4 py-2 text-base font-medium text-white transition hover:bg-accent/90 disabled:opacity-50"
                 >
                   Add
                 </button>
@@ -432,7 +432,7 @@ export function Board() {
                     setShowAddColumn(false);
                     setNewColumnName("");
                   }}
-                  className="rounded border border-border px-2 py-1 text-[10px] text-muted-fg transition hover:text-zinc-200"
+                  className="rounded border border-border px-4 py-2 text-base text-muted-fg transition hover:text-zinc-200"
                 >
                   Cancel
                 </button>
@@ -440,7 +440,7 @@ export function Board() {
             ) : (
               <button
                 onClick={() => setShowAddColumn(true)}
-                className="rounded border border-border px-2 py-1 text-[10px] font-medium text-zinc-200 transition hover:bg-surface-raised"
+                className="rounded border border-border px-4 py-2 text-base font-medium text-zinc-200 transition hover:bg-surface-raised"
               >
                 + Add Column
               </button>
@@ -450,7 +450,7 @@ export function Board() {
                 <button
                   key={v}
                   onClick={() => setViewMode(v)}
-                  className={`rounded px-2 py-0.5 text-[10px] font-semibold capitalize transition ${
+                  className={`rounded px-3 py-1.5 text-sm font-semibold capitalize transition ${
                     viewMode === v
                       ? "bg-accent text-white"
                       : "border border-border text-muted-fg hover:text-zinc-200"
@@ -515,7 +515,7 @@ export function Board() {
                       />
                     ))}
                     {colTasks.length === 0 && (
-                      <div className="py-2 text-xs text-muted-fg">No tasks</div>
+                      <div className="py-2 text-sm text-muted-fg">No tasks</div>
                     )}
                   </div>
                 </div>
@@ -527,7 +527,7 @@ export function Board() {
             <div className="grid gap-2" style={{ gridTemplateColumns: `200px repeat(${sortedColumns.length}, 1fr)` }}>
               <div className="text-xs font-semibold uppercase text-muted-fg">Agent</div>
               {sortedColumns.map((col) => (
-                <div key={col.id} className="text-xs font-semibold uppercase text-muted-fg">{col.name}</div>
+                <div key={col.id} className="text-sm font-semibold uppercase text-muted-fg">{col.name}</div>
               ))}
             </div>
             {(agents ?? []).concat(UNASSIGNED_AGENT).map((agent) => {
@@ -540,7 +540,7 @@ export function Board() {
                       className="inline-block h-2.5 w-2.5 rounded-full"
                       style={{ backgroundColor: resolveAgentColor(agent.color) ?? "#a1a1aa" }}
                     />
-                    <span className="text-sm font-medium text-zinc-200">{agent.name}</span>
+                    <span className="text-base font-medium text-zinc-200">{agent.name}</span>
                   </div>
                   {sortedColumns.map((col) => {
                     const phase = computePhase(col.position, sortedColumns.length);
@@ -566,7 +566,7 @@ export function Board() {
                             />
                           ))}
                           {cellTasks.length === 0 && (
-                            <div className="py-1 text-[10px] text-muted-fg">—</div>
+                            <div className="py-1 text-sm text-muted-fg">—</div>
                           )}
                         </div>
                       </div>
