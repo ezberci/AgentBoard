@@ -25,22 +25,24 @@ web/src/
 ├── types.ts              # Shared TypeScript interfaces
 ├── api/client.ts         # Typed fetch wrapper
 ├── lib/
-│   └── agentColors.ts    # Color slug → CSS color resolver
+│   ├── agentColors.ts    # Color slug → CSS color resolver
+│   └── phase.ts          # Column position → phase (1-4) calculator
 ├── hooks/
 │   ├── useAgents.ts      # Agent CRUD hooks
 │   ├── useBoard.ts       # Board data + WebSocket listener
 │   ├── useModels.ts      # Model registry hooks
-│   ├── useProjects.ts    # Project hooks
+│   ├── useProjects.ts    # Project hooks (+ useCreateProject)
 │   ├── useTaskDetail.ts  # Task + update + comment hooks
 │   └── useTaskRuns.ts    # Task run history hook
 ├── pages/
 │   ├── Board.tsx         # Main board (classic/dense/swimlanes)
 │   ├── Agents.tsx        # Agent CRUD page
 │   ├── Skills.tsx        # Skill CRUD page
-│   └── Models.tsx        # Model registry page
+│   ├── Models.tsx        # Model registry page
+│   └── Settings.tsx      # MCP snippet, health checks, env status
 └── components/
-    ├── Column.tsx        # Droppable column
-    ├── TaskCard.tsx      # Draggable task card
+    ├── Column.tsx        # Droppable column + inline task create
+    ├── TaskCard.tsx      # Draggable task card + phase ribbon
     └── TaskDetail.tsx    # Slide-out drawer (detail, comments, run)
 ```
 
@@ -107,11 +109,13 @@ try {
 
 Three view modes in `Board.tsx`:
 
-| View | Description | DnD |
-|------|-------------|-----|
-| `classic` | Kanban columns with cards | Yes |
-| `dense` | Compact list per column | No |
-| `swimlanes` | Agent rows × column grid | No |
+| View | Description | DnD | Phase Ribbon |
+|------|-------------|-----|--------------|
+| `classic` | Kanban columns with cards | Yes | Yes |
+| `dense` | Compact list per column | Yes | Yes |
+| `swimlanes` | Agent rows × column grid | Yes | Yes |
+
+All views reuse `TaskCard` for consistent card rendering, draggability, and agent dots.
 
 Switch via state: `const [viewMode, setViewMode] = useState<ViewMode>("classic");`
 
@@ -143,8 +147,41 @@ Status is derived from `column.is_terminal` and `task.claimed_at`:
 | `←` / `→` | Navigate to adjacent column (same index) |
 | `Enter` | Open task detail drawer |
 | `Escape` | Close drawer |
+| `Delete` | Delete focused task (with confirmation) |
 
 Focusable cards have `tabIndex={0}` and `data-task-id={id}`.
+
+## 5. Task & Column CRUD UI
+
+### 5.1 Create Task
+Each `Column` has an "+ Add task" button at the bottom. Clicking opens an inline form with:
+- Title input (auto-focused)
+- Priority selector (P1–P4)
+- Add / Cancel buttons
+
+Uses `useMutation` + `api.createTask()`. On success invalidates the project's tasks query.
+
+### 5.2 Delete Task
+- **Board:** Hovering a `TaskCard` reveals a delete button (⋮ or 🗑).
+- **TaskDetail drawer:** Footer has a red "Delete" button with `confirm()` guard.
+Both call `api.deleteTask()` and invalidate queries on success.
+
+### 5.3 Column Management
+- **Rename:** Click the column header name to enter inline edit mode. Submit on Enter or blur.
+- **Delete:** Column header has a "⋮" actions menu with Delete option (with `confirm()`).
+- **Add:** Board toolbar has an "+ Add Column" inline form.
+
+All column mutations invalidate `["projects", projectId, "columns"]`.
+
+## 6. Settings Page
+
+`pages/Settings.tsx` provides onboarding and diagnostics:
+
+| Section | Data Source |
+|---------|------------|
+| Backend Health | `api.health()` |
+| Model Env Checks | `api.modelsHealth()` |
+| MCP Snippet | Hardcoded JSON config with **Copy** button |
 
 ## 7. Agent Colors
 

@@ -158,6 +158,13 @@ export function Column({ column, tasks, agentMap, totalColumns, projectId, onTas
             agentColor={agentMap.get(task.assigned_agent_id ?? -1)}
             phase={phase}
             onClick={() => onTaskClick?.(task.id)}
+            onDelete={() => {
+              if (confirm(`Delete task "${task.title}"?`)) {
+                api.deleteTask(task.id).then(() => {
+                  queryClient.invalidateQueries({ queryKey: ["projects", projectId, "tasks"] });
+                });
+              }
+            }}
           />
         ))}
       </div>

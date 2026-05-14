@@ -78,6 +78,8 @@ uv run ruff check src tests
 
 ## 7. MCP Setup
 
+You can copy the MCP server snippet from the **Settings** page in the UI (top-right nav), or run:
+
 ```bash
 set -a; source .env; set +a
 claude mcp add vibe-kanban -- \
@@ -86,6 +88,8 @@ claude mcp add vibe-kanban -- \
 ```
 
 Verify in Claude Code with `/mcp`.
+
+The **Settings** page also shows model environment variable health (`/api/models/health`).
 
 ## 8. Adding a Model
 

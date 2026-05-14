@@ -11,10 +11,12 @@ import { useProjects, useCreateProject } from "@/hooks/useProjects";
 import { useBoard } from "@/hooks/useBoard";
 import { useAgents } from "@/hooks/useAgents";
 import { Column } from "@/components/Column";
+import { TaskCard } from "@/components/TaskCard";
 import { TaskDetail } from "@/components/TaskDetail";
 import { api } from "@/api/client";
 import type { Task, Column as ColumnType } from "@/types";
 import { resolveAgentColor } from "@/lib/agentColors";
+import { computePhase } from "@/lib/phase";
 
 type ViewMode = "classic" | "dense" | "swimlanes";
 type StatusFilter = "todo" | "in_progress" | "done";
@@ -189,6 +191,15 @@ export function Board() {
         }
         case "Enter": {
           setSelectedTaskId(currentId);
+          break;
+        }
+        case "Delete": {
+          const task = tasks.find((t) => t.id === currentId);
+          if (task && confirm(`Delete task "${task.title}"?`)) {
+            api.deleteTask(currentId).then(() => {
+              queryClient.invalidateQueries({ queryKey: ["projects", selectedProjectId, "tasks"] });
+            });
+          }
           break;
         }
       }
@@ -474,33 +485,30 @@ export function Board() {
           <div className="flex h-full flex-col gap-4 overflow-y-auto">
             {sortedColumns.map((col) => {
               const colTasks = tasksByColumn.get(col.id) ?? [];
+              const phase = computePhase(col.position, sortedColumns.length);
               return (
                 <div key={col.id} className="rounded-xl border border-border bg-surface p-3">
                   <div className="mb-2 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-zinc-200">{col.name}</h3>
                     <span className="rounded bg-surface-sunken px-1.5 py-0.5 text-xs font-medium text-muted-fg">{colTasks.length}</span>
                   </div>
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-2">
                     {colTasks.map((task) => (
-                      <div
+                      <TaskCard
                         key={task.id}
-                        data-task-id={task.id}
-                        tabIndex={0}
+                        task={task}
+                        agentColor={agentMap.get(task.assigned_agent_id ?? -1)}
+                        phase={phase}
+                        draggable={false}
                         onClick={() => setSelectedTaskId(task.id)}
-                        onKeyDown={(e) => { if (e.key === "Enter") setSelectedTaskId(task.id); }}
-                        className="flex cursor-pointer items-center gap-3 rounded-md border border-border bg-surface-raised px-3 py-2 outline-none focus:ring-2 focus:ring-accent"
-                      >
-                        <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${priorityClass(task.priority)}`}>
-                          {priorityLabel(task.priority)}
-                        </span>
-                        <span className="flex-1 text-sm text-zinc-100">{task.title}</span>
-                        {task.assigned_agent_id && (
-                          <span
-                            className="inline-block h-2 w-2 rounded-full"
-                            style={{ backgroundColor: resolveAgentColor(agentMap.get(task.assigned_agent_id)) }}
-                          />
-                        )}
-                      </div>
+                        onDelete={() => {
+                          if (confirm(`Delete task "${task.title}"?`)) {
+                            api.deleteTask(task.id).then(() => {
+                              queryClient.invalidateQueries({ queryKey: ["projects", selectedProjectId, "tasks"] });
+                            });
+                          }
+                        }}
+                      />
                     ))}
                     {colTasks.length === 0 && (
                       <div className="py-2 text-xs text-muted-fg">No tasks</div>
@@ -531,28 +539,29 @@ export function Board() {
                     <span className="text-sm font-medium text-zinc-200">{agent.name}</span>
                   </div>
                   {sortedColumns.map((col) => {
+                    const phase = computePhase(col.position, sortedColumns.length);
                     const cellTasks = (tasksByColumn.get(col.id) ?? []).filter((t) =>
                       isUnassigned ? t.assigned_agent_id == null : t.assigned_agent_id === agentId
                     );
                     return (
                       <div key={col.id} className="rounded-md border border-border bg-surface p-2">
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-col gap-2">
                           {cellTasks.map((task) => (
-                            <div
+                            <TaskCard
                               key={task.id}
-                              data-task-id={task.id}
-                              tabIndex={0}
+                              task={task}
+                              agentColor={agentMap.get(task.assigned_agent_id ?? -1)}
+                              phase={phase}
+                              draggable={false}
                               onClick={() => setSelectedTaskId(task.id)}
-                              onKeyDown={(e) => { if (e.key === "Enter") setSelectedTaskId(task.id); }}
-                              className="cursor-pointer rounded border border-border bg-surface-raised p-2 outline-none focus:ring-2 focus:ring-accent"
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className={`rounded px-1 text-[10px] font-semibold uppercase ${priorityClass(task.priority)}`}>
-                                  {priorityLabel(task.priority)}
-                                </span>
-                                <span className="text-xs text-zinc-100">{task.title}</span>
-                              </div>
-                            </div>
+                              onDelete={() => {
+                                if (confirm(`Delete task "${task.title}"?`)) {
+                                  api.deleteTask(task.id).then(() => {
+                                    queryClient.invalidateQueries({ queryKey: ["projects", selectedProjectId, "tasks"] });
+                                  });
+                                }
+                              }}
+                            />
                           ))}
                           {cellTasks.length === 0 && (
                             <div className="py-1 text-[10px] text-muted-fg">—</div>
@@ -568,7 +577,15 @@ export function Board() {
         )}
       </main>
 
-      <TaskDetail taskId={selectedTaskId} onClose={() => setSelectedTaskId(null)} />
+      <TaskDetail
+        taskId={selectedTaskId}
+        onClose={() => setSelectedTaskId(null)}
+        onDelete={(id) => {
+          api.deleteTask(id).then(() => {
+            queryClient.invalidateQueries({ queryKey: ["projects", selectedProjectId, "tasks"] });
+          });
+        }}
+      />
     </div>
   );
 }

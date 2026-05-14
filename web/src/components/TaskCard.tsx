@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { Task } from "@/types";
@@ -7,8 +8,10 @@ interface TaskCardProps {
   task: Task;
   agentColor?: string;
   phase?: 1 | 2 | 3 | 4;
+  draggable?: boolean;
   onClick?: () => void;
   onFocus?: () => void;
+  onDelete?: () => void;
 }
 
 function priorityLabel(priority: number): string {
@@ -41,10 +44,12 @@ function PhaseRibbon({ phase }: { phase?: 1 | 2 | 3 | 4 }) {
   );
 }
 
-export function TaskCard({ task, agentColor, phase, onClick, onFocus }: TaskCardProps) {
+export function TaskCard({ task, agentColor, phase, draggable = true, onClick, onFocus, onDelete }: TaskCardProps) {
+  const [hovered, setHovered] = useState(false);
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `task-${task.id}`,
+    id: draggable ? `task-${task.id}` : `static-task-${task.id}`,
     data: { task },
+    disabled: !draggable,
   });
 
   const style = {
@@ -58,21 +63,40 @@ export function TaskCard({ task, agentColor, phase, onClick, onFocus }: TaskCard
     <div
       ref={setNodeRef}
       style={style}
-      {...listeners}
-      {...attributes}
+      {...(draggable ? { ...listeners, ...attributes } : {})}
       data-task-id={task.id}
       tabIndex={0}
       onFocus={onFocus}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.stopPropagation();
           onClick?.();
         }
+        if (e.key === "Delete" && onDelete) {
+          e.stopPropagation();
+          onDelete();
+        }
       }}
       onClick={onClick}
-      className="rounded-lg border border-border bg-surface-raised p-3 shadow-sm transition hover:shadow-md cursor-pointer outline-none focus:ring-2 focus:ring-accent"
+      className="group relative rounded-lg border border-border bg-surface-raised p-3 shadow-sm transition hover:shadow-md cursor-pointer outline-none focus:ring-2 focus:ring-accent"
     >
-      <div className="flex items-start justify-between gap-2">
+      {onDelete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className={`absolute right-2 top-2 rounded p-1 text-xs text-red-400 transition hover:bg-red-500/20 ${
+            hovered ? "opacity-100" : "opacity-0"
+          }`}
+          title="Delete task"
+        >
+          🗑
+        </button>
+      )}
+      <div className="flex items-start justify-between gap-2 pr-6">
         <h4 className="text-sm font-medium text-zinc-100">{task.title}</h4>
         <span
           className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${priorityClass(task.priority)}`}
