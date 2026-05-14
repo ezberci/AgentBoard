@@ -1,6 +1,7 @@
 """Skill service."""
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from vibe_kanban_clone.models.skill import Skill
@@ -16,7 +17,11 @@ async def create_skill(session: AsyncSession, data: SkillCreate) -> Skill:
         allowed_tools=data.allowed_tools,
     )
     session.add(skill)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError as err:
+        await session.rollback()
+        raise ValueError(f"Skill with name '{data.name}' already exists") from err
     await session.refresh(skill)
     return skill
 
@@ -27,9 +32,9 @@ async def get_skill(session: AsyncSession, skill_id: int) -> Skill | None:
     return result.scalar_one_or_none()
 
 
-async def list_skills(session: AsyncSession) -> list[Skill]:
+async def list_skills(session: AsyncSession, limit: int = 50, offset: int = 0) -> list[Skill]:
     """List all skills."""
-    result = await session.execute(select(Skill))
+    result = await session.execute(select(Skill).limit(limit).offset(offset))
     return list(result.scalars().all())
 
 

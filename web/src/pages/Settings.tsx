@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { api } from "@/api/client";
 
 const MCP_SNIPPET = `{
@@ -20,6 +20,7 @@ export function Settings() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -27,8 +28,8 @@ export function Settings() {
         const [h, mh] = await Promise.all([api.health(), api.modelsHealth()]);
         setHealth(h);
         setModelsHealth(mh);
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error("Failed to load health:", err);
       } finally {
         setLoading(false);
       }
@@ -39,8 +40,15 @@ export function Settings() {
   const copySnippet = async () => {
     await navigator.clipboard.writeText(MCP_SNIPPET);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
   };
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
 
   return (
     <div className="mx-auto max-w-2xl p-6">

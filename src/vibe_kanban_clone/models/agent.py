@@ -22,7 +22,7 @@ class Agent(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(unique=True, nullable=False)
     system_prompt: Mapped[str | None] = mapped_column(nullable=True)
-    color: Mapped[str | None] = mapped_column(nullable=True)
+    color: Mapped[str | None] = mapped_column(unique=True, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=func.now(), nullable=False)
 
     skills: Mapped[list[Skill]] = relationship(secondary="agent_skills", back_populates="agents")

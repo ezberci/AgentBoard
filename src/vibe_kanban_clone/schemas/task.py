@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TaskCreate(BaseModel):
@@ -10,9 +10,9 @@ class TaskCreate(BaseModel):
 
     project_id: int
     column_id: int | None = None
-    title: str
-    description: str | None = None
-    priority: int = 4
+    title: str = Field(min_length=1, max_length=255)
+    description: str | None = Field(default=None, min_length=1, max_length=5000)
+    priority: int = Field(default=4, ge=1, le=5)
     assigned_agent_id: int | None = None
 
 
@@ -38,10 +38,10 @@ class TaskRead(BaseModel):
 class TaskUpdate(BaseModel):
     """Schema for updating a task."""
 
-    title: str | None = None
-    description: str | None = None
-    priority: int | None = None
-    result: str | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, min_length=1, max_length=5000)
+    priority: int | None = Field(default=None, ge=1, le=5)
+    result: str | None = Field(default=None, min_length=1, max_length=50000)
     assigned_agent_id: int | None = None
     expected_version: int | None = None
 
@@ -51,3 +51,10 @@ class TaskMove(BaseModel):
 
     column_id: int
     expected_version: int | None = None
+
+
+class TaskRunCreate(BaseModel):
+    """Schema for starting a task execution run."""
+
+    model_id: int
+    prompt: str | None = None

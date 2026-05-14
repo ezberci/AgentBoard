@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from vibe_kanban_clone.api.deps import get_session
+from vibe_kanban_clone.schemas.common import PaginatedParams
 from vibe_kanban_clone.schemas.skill import SkillCreate, SkillRead, SkillUpdate
 from vibe_kanban_clone.services import skills as skills_service
 
@@ -14,10 +15,11 @@ router = APIRouter()
 
 @router.get("/skills", response_model=list[SkillRead])
 async def list_skills(
+    pagination: Annotated[PaginatedParams, Depends()],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> list[SkillRead]:
     """List all skills."""
-    return await skills_service.list_skills(session)
+    return await skills_service.list_skills(session, pagination.limit, pagination.offset)
 
 
 @router.post("/skills", response_model=SkillRead, status_code=201)

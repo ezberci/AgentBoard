@@ -5,6 +5,7 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from vibe_kanban_clone.models.agent import Agent
 from vibe_kanban_clone.models.column import Column
 from vibe_kanban_clone.models.task import Task
 from vibe_kanban_clone.schemas.task import TaskCreate, TaskMove, TaskUpdate
@@ -23,6 +24,12 @@ async def create_task(session: AsyncSession, data: TaskCreate) -> Task:
         assigned_agent_id=data.assigned_agent_id,
     )
     session.add(task)
+
+    col_result = await session.execute(select(Column).where(Column.id == task.column_id))
+    column = col_result.scalar_one_or_none()
+    if column is None or column.project_id != task.project_id:
+        raise ValueError("Column does not belong to project")
+
     await session.commit()
     await session.refresh(task)
     logger.info("task_created", task_id=task.id)
@@ -37,9 +44,13 @@ async def get_task(session: AsyncSession, task_id: int) -> Task | None:
     return result.scalar_one_or_none()
 
 
-async def list_tasks_by_project(session: AsyncSession, project_id: int) -> list[Task]:
+async def list_tasks_by_project(
+    session: AsyncSession, project_id: int, limit: int = 50, offset: int = 0
+) -> list[Task]:
     """List all tasks in a project."""
-    result = await session.execute(select(Task).where(Task.project_id == project_id))
+    result = await session.execute(
+        select(Task).where(Task.project_id == project_id).limit(limit).offset(offset)
+    )
     return list(result.scalars().all())
 
 
@@ -71,7 +82,7 @@ async def list_tasks_filtered(
 
 async def update_task(session: AsyncSession, task: Task, data: TaskUpdate) -> Task:
     """Update a task, checking expected_version for optimistic locking."""
-    if data.expected_version is not None and task.version != data.expected_version:
+    if task.version != data.expected_version:
         raise ValueError("version mismatch")
 
     if data.title is not None:
@@ -83,6 +94,12 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate) -> Ta
     if data.result is not None:
         task.result = data.result
     if data.assigned_agent_id is not None:
+        agent_result = await session.execute(
+            select(Agent).where(Agent.id == data.assigned_agent_id)
+        )
+        agent = agent_result.scalar_one_or_none()
+        if agent is None:
+            raise ValueError("Agent not found")
         task.assigned_agent_id = data.assigned_agent_id
 
     task.version += 1
@@ -94,8 +111,13 @@ async def update_task(session: AsyncSession, task: Task, data: TaskUpdate) -> Ta
 
 async def move_task(session: AsyncSession, task: Task, data: TaskMove) -> Task:
     """Move a task to another column, checking expected_version."""
-    if data.expected_version is not None and task.version != data.expected_version:
+    if task.version != data.expected_version:
         raise ValueError("version mismatch")
+
+    col_result = await session.execute(select(Column).where(Column.id == data.column_id))
+    column = col_result.scalar_one_or_none()
+    if column is None or column.project_id != task.project_id:
+        raise ValueError("Column does not belong to project")
 
     task.column_id = data.column_id
     task.version += 1
@@ -169,48 +191,37 @@ async def claim_next_task(session: AsyncSession, agent_id: int, project_id: int)
     )
     result = await session.execute(sql, {"project_id": project_id, "agent_id": agent_id})
     row = result.mappings().fetchone()
+    await session.commit()
     if row is None:
         return None
-    task_id = row["id"]
-    await session.commit()
-    task = await get_task(session, task_id)
+    task = await session.get(Task, row["id"])
     if task is None:
         return None
 
-    from vibe_kanban_clone.api.routes.ws import broadcast_project
-    from vibe_kanban_clone.schemas.task import TaskRead
-
-    await broadcast_project(
-        project_id,
-        "task.claimed",
-        TaskRead.model_validate(task).model_dump(mode="json"),
-    )
     logger.info("task_claimed", task_id=task.id, agent_id=agent_id)
     return task
 
 
-async def complete_task(session: AsyncSession, task: Task, result: str) -> Task:
+async def complete_task(
+    session: AsyncSession, task: Task, result: str, terminal_column_id: int | None = None
+) -> Task:
     """Mark a task as complete by writing the result and moving it to the terminal column."""
-    col_result = await session.execute(
-        select(Column).where(Column.project_id == task.project_id, Column.is_terminal == True)  # noqa: E712
-    )
-    terminal_col = col_result.scalar_one_or_none()
-    if terminal_col is None:
-        raise ValueError("no terminal column")
+    if terminal_column_id is None:
+        col_result = await session.execute(
+            select(Column)
+            .where(Column.project_id == task.project_id, Column.is_terminal == True)  # noqa: E712
+            .order_by(Column.position.asc())
+            .limit(1)
+        )
+        terminal_col = col_result.scalar_one_or_none()
+        if terminal_col is None:
+            raise ValueError("no terminal column")
+        terminal_column_id = terminal_col.id
 
     task.result = result
-    task.column_id = terminal_col.id
+    task.column_id = terminal_column_id
     task.version += 1
     await session.commit()
     await session.refresh(task)
-
-    from vibe_kanban_clone.api.routes.ws import broadcast_project
-    from vibe_kanban_clone.schemas.task import TaskRead
-
-    await broadcast_project(
-        task.project_id,
-        "task.completed",
-        TaskRead.model_validate(task).model_dump(mode="json"),
-    )
     logger.info("task_completed", task_id=task.id)
     return task

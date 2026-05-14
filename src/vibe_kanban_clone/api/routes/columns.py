@@ -13,6 +13,7 @@ from vibe_kanban_clone.schemas.column import (
     ColumnReorder,
     ColumnUpdate,
 )
+from vibe_kanban_clone.schemas.common import PaginatedParams
 from vibe_kanban_clone.services import columns as columns_service
 from vibe_kanban_clone.services import projects as projects_service
 
@@ -22,13 +23,16 @@ router = APIRouter()
 @router.get("/projects/{project_id}/columns", response_model=list[ColumnRead])
 async def list_columns(
     project_id: int,
+    pagination: Annotated[PaginatedParams, Depends()],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> list[ColumnRead]:
     """List all columns in a project."""
     project = await projects_service.get_project(session, project_id)
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
-    return await columns_service.list_columns_by_project(session, project_id)
+    return await columns_service.list_columns_by_project(
+        session, project_id, pagination.limit, pagination.offset
+    )
 
 
 @router.post("/projects/{project_id}/columns", response_model=ColumnRead, status_code=201)

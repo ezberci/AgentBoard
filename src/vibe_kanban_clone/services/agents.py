@@ -4,10 +4,12 @@ import re
 
 import structlog
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from vibe_kanban_clone.models.agent import Agent
+from vibe_kanban_clone.models.agent_skill import AgentSkill
 from vibe_kanban_clone.models.skill import Skill
 from vibe_kanban_clone.schemas.agent import AgentCreate, AgentUpdate
 
@@ -21,8 +23,13 @@ def slug_to_color(name: str) -> str:
     return initials.lower() or "na"
 
 
+def _is_color_integrity_error(exc: IntegrityError) -> bool:
+    msg = str(exc.orig) if exc.orig else str(exc)
+    return "agents.color" in msg
+
+
 async def _ensure_unique_color(session: AsyncSession, base_color: str) -> str:
-    """Append a numeric suffix until the color code is unique."""
+    """Append a numeric suffix until the color code is unique (best-effort pre-check)."""
     color = base_color
     counter = 2
     while True:
@@ -36,18 +43,40 @@ async def _ensure_unique_color(session: AsyncSession, base_color: str) -> str:
 async def create_agent(session: AsyncSession, data: AgentCreate) -> Agent:
     """Create a new agent with an auto-deduped color."""
     color = data.color
+    base_color = None
     if color is None:
-        color = await _ensure_unique_color(session, slug_to_color(data.name))
+        base_color = slug_to_color(data.name)
+        color = await _ensure_unique_color(session, base_color)
     agent = Agent(
         name=data.name,
         system_prompt=data.system_prompt,
         color=color,
     )
     session.add(agent)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        if base_color is not None and _is_color_integrity_error(exc):
+            counter = 2
+            while True:
+                agent.color = f"{base_color}{counter}"
+                counter += 1
+                session.add(agent)
+                try:
+                    await session.commit()
+                    break
+                except IntegrityError as inner_exc:
+                    await session.rollback()
+                    if not _is_color_integrity_error(inner_exc):
+                        raise ValueError(
+                            f"Agent with name '{data.name}' already exists"
+                        ) from inner_exc
+        else:
+            raise ValueError(f"Agent with name '{data.name}' already exists") from exc
     await session.refresh(agent)
     await session.refresh(agent, attribute_names=["skills"])
-    logger.info("agent_created", agent_id=agent.id, color=color)
+    logger.info("agent_created", agent_id=agent.id, color=agent.color)
     return agent
 
 
@@ -59,9 +88,11 @@ async def get_agent(session: AsyncSession, agent_id: int) -> Agent | None:
     return result.scalar_one_or_none()
 
 
-async def list_agents(session: AsyncSession) -> list[Agent]:
+async def list_agents(session: AsyncSession, limit: int = 50, offset: int = 0) -> list[Agent]:
     """List all agents with eagerly loaded skills."""
-    result = await session.execute(select(Agent).options(selectinload(Agent.skills)))
+    result = await session.execute(
+        select(Agent).options(selectinload(Agent.skills)).limit(limit).offset(offset)
+    )
     return list(result.scalars().all())
 
 
@@ -89,8 +120,10 @@ async def delete_agent(session: AsyncSession, agent: Agent) -> None:
 
 async def assign_skill(session: AsyncSession, agent: Agent, skill: Skill) -> Agent:
     """Assign a skill to an agent."""
-    await session.refresh(agent, attribute_names=["skills"])
-    if skill not in agent.skills:
+    result = await session.execute(
+        select(AgentSkill).where(AgentSkill.agent_id == agent.id, AgentSkill.skill_id == skill.id)
+    )
+    if result.scalar_one_or_none() is None:
         agent.skills.append(skill)
         await session.commit()
         await session.refresh(agent)
@@ -100,8 +133,10 @@ async def assign_skill(session: AsyncSession, agent: Agent, skill: Skill) -> Age
 
 async def remove_skill(session: AsyncSession, agent: Agent, skill: Skill) -> Agent:
     """Remove a skill from an agent."""
-    await session.refresh(agent, attribute_names=["skills"])
-    if skill in agent.skills:
+    result = await session.execute(
+        select(AgentSkill).where(AgentSkill.agent_id == agent.id, AgentSkill.skill_id == skill.id)
+    )
+    if result.scalar_one_or_none() is not None:
         agent.skills.remove(skill)
         await session.commit()
         await session.refresh(agent)

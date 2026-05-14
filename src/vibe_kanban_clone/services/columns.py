@@ -27,10 +27,16 @@ async def get_column(session: AsyncSession, column_id: int) -> Column | None:
     return result.scalar_one_or_none()
 
 
-async def list_columns_by_project(session: AsyncSession, project_id: int) -> list[Column]:
+async def list_columns_by_project(
+    session: AsyncSession, project_id: int, limit: int = 50, offset: int = 0
+) -> list[Column]:
     """List all columns in a project, ordered by position."""
     result = await session.execute(
-        select(Column).where(Column.project_id == project_id).order_by(Column.position)
+        select(Column)
+        .where(Column.project_id == project_id)
+        .order_by(Column.position)
+        .limit(limit)
+        .offset(offset)
     )
     return list(result.scalars().all())
 
@@ -61,8 +67,9 @@ async def reorder_columns(
     result = await session.execute(select(Column).where(Column.project_id == project_id))
     columns = {c.id: c for c in result.scalars().all()}
 
+    valid_ids = set(columns.keys())
     for col_id, new_pos in data.positions.items():
-        if col_id in columns:
+        if col_id in valid_ids:
             columns[col_id].position = new_pos
 
     await session.commit()

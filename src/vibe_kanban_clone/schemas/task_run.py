@@ -1,9 +1,13 @@
 """Task run schemas."""
 
-from pydantic import BaseModel
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
 
 
 class TaskRunRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     task_id: int
     model_id: int | None
@@ -12,9 +16,6 @@ class TaskRunRead(BaseModel):
     prompt: str | None
     output: str | None
     usage: dict | None
-    started_at: str | None
-    finished_at: str | None
+    started_at: datetime | None
+    finished_at: datetime | None
     error: str | None
-
-    class Config:
-        from_attributes = True

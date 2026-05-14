@@ -2,14 +2,14 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ProjectCreate(BaseModel):
     """Schema for creating a project."""
 
-    name: str
-    description: str | None = None
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = Field(default=None, min_length=1, max_length=5000)
 
 
 class ProjectRead(BaseModel):
@@ -28,5 +28,5 @@ class ProjectRead(BaseModel):
 class ProjectUpdate(BaseModel):
     """Schema for updating a project."""
 
-    name: str | None = None
-    description: str | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, min_length=1, max_length=5000)

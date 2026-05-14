@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from vibe_kanban_clone.api.deps import require_auth
 from vibe_kanban_clone.api.routes import (
     agents,
     columns,
@@ -12,24 +13,31 @@ from vibe_kanban_clone.api.routes import (
     ws,
 )
 from vibe_kanban_clone.config import settings
+from vibe_kanban_clone.logging import configure_logging
 
-app = FastAPI(title="Vibe Kanban Clone")
+configure_logging()
+
+app = FastAPI(
+    title="Vibe Kanban Clone",
+    docs_url=None if settings.env == "production" else "/docs",
+    redoc_url=None if settings.env == "production" else "/redoc",
+)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "x-api-key"],
 )
 
-app.include_router(projects.router, prefix="/api")
-app.include_router(columns.router, prefix="/api")
-app.include_router(tasks.router, prefix="/api")
-app.include_router(agents.router, prefix="/api")
-app.include_router(skills.router, prefix="/api")
-app.include_router(models.router, prefix="/api")
-app.include_router(mcp_info.router, prefix="/api")
+app.include_router(projects.router, prefix="/api", dependencies=[Depends(require_auth)])
+app.include_router(columns.router, prefix="/api", dependencies=[Depends(require_auth)])
+app.include_router(tasks.router, prefix="/api", dependencies=[Depends(require_auth)])
+app.include_router(agents.router, prefix="/api", dependencies=[Depends(require_auth)])
+app.include_router(skills.router, prefix="/api", dependencies=[Depends(require_auth)])
+app.include_router(models.router, prefix="/api", dependencies=[Depends(require_auth)])
+app.include_router(mcp_info.router, prefix="/api", dependencies=[Depends(require_auth)])
 app.include_router(ws.router)
 
 

@@ -162,7 +162,11 @@ export function Models() {
                   Edit
                 </button>
                 <button
-                  onClick={() => deleteModel.mutate(model.id)}
+                  onClick={() => {
+                    if (confirm(`Delete model "${model.name}"?`)) {
+                      deleteModel.mutate(model.id);
+                    }
+                  }}
                   className="rounded px-2 py-1 text-xs text-red-400 hover:bg-red-500/10"
                 >
                   Delete

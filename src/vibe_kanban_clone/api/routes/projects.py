@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from vibe_kanban_clone.api.deps import get_session
 from vibe_kanban_clone.api.routes.ws import broadcast_global
+from vibe_kanban_clone.schemas.common import PaginatedParams
 from vibe_kanban_clone.schemas.project import ProjectCreate, ProjectRead, ProjectUpdate
 from vibe_kanban_clone.services import projects as projects_service
 
@@ -15,10 +16,11 @@ router = APIRouter()
 
 @router.get("/projects", response_model=list[ProjectRead])
 async def list_projects(
+    pagination: Annotated[PaginatedParams, Depends()],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> list[ProjectRead]:
     """List all projects."""
-    return await projects_service.list_projects(session)
+    return await projects_service.list_projects(session, pagination.limit, pagination.offset)
 
 
 @router.post("/projects", response_model=ProjectRead, status_code=201)

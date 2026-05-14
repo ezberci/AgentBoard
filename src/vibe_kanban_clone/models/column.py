@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, func
+from sqlalchemy import ForeignKey, Index, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from vibe_kanban_clone.db.base import Base
@@ -17,6 +17,7 @@ class Column(Base):
     """Kanban column entity."""
 
     __tablename__ = "columns"
+    __table_args__ = (Index("idx_columns_project_position", "project_id", "position"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     project_id: Mapped[int] = mapped_column(

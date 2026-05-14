@@ -11,9 +11,12 @@ async def test_add_comment_api(client: AsyncClient):
     project_resp = await client.post("/api/projects", json={"name": "P"})
     project_id = project_resp.json()["id"]
 
+    col_resp = await client.post(f"/api/projects/{project_id}/columns", json={"name": "Backlog"})
+    col_id = col_resp.json()["id"]
+
     task_resp = await client.post(
         "/api/tasks",
-        json={"project_id": project_id, "title": "T1"},
+        json={"project_id": project_id, "column_id": col_id, "title": "T1"},
     )
     task_id = task_resp.json()["id"]
 
@@ -33,9 +36,12 @@ async def test_list_comments_via_task_detail(client: AsyncClient, session: Async
     project_resp = await client.post("/api/projects", json={"name": "P"})
     project_id = project_resp.json()["id"]
 
+    col_resp = await client.post(f"/api/projects/{project_id}/columns", json={"name": "Backlog"})
+    col_id = col_resp.json()["id"]
+
     task_resp = await client.post(
         "/api/tasks",
-        json={"project_id": project_id, "title": "T1"},
+        json={"project_id": project_id, "column_id": col_id, "title": "T1"},
     )
     task_id = task_resp.json()["id"]
 

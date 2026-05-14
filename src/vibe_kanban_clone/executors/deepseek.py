@@ -5,8 +5,11 @@ import os
 from collections.abc import AsyncIterator
 
 import httpx
+import structlog
 
 from vibe_kanban_clone.executors.base import BaseExecutor
+
+logger = structlog.get_logger()
 
 
 class DeepSeekExecutor(BaseExecutor):
@@ -32,10 +35,11 @@ class DeepSeekExecutor(BaseExecutor):
                     "messages": [{"role": "user", "content": prompt}],
                     "stream": True,
                 },
-                timeout=120,
+                timeout=model_config.get("timeout", 120),
             )
             response.raise_for_status()
 
+            yielded = False
             async for line in response.aiter_lines():
                 if line.startswith("data: "):
                     data = line[6:]
@@ -46,6 +50,9 @@ class DeepSeekExecutor(BaseExecutor):
                         delta = chunk["choices"][0]["delta"]
                         content = delta.get("content", "")
                         if content:
+                            yielded = True
                             yield content
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logger.warning("deepseek_chunk_parse_error", error=str(exc), data=data)
+            if not yielded:
+                raise RuntimeError("No tokens yielded from DeepSeek stream")

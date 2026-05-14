@@ -3,6 +3,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { Task } from "@/types";
 import { resolveAgentColor } from "@/lib/agentColors";
+import { priorityClass, priorityLabel } from "@/lib/priority";
 
 interface TaskCardProps {
   task: Task;
@@ -12,20 +13,6 @@ interface TaskCardProps {
   onClick?: () => void;
   onFocus?: () => void;
   onDelete?: () => void;
-}
-
-function priorityLabel(priority: number): string {
-  if (priority <= 1) return "P1";
-  if (priority <= 2) return "P2";
-  if (priority <= 3) return "P3";
-  return "P4";
-}
-
-function priorityClass(priority: number): string {
-  if (priority <= 1) return "bg-red-500/20 text-red-400";
-  if (priority <= 2) return "bg-amber-500/20 text-amber-400";
-  if (priority <= 3) return "bg-blue-500/20 text-blue-400";
-  return "bg-zinc-500/20 text-zinc-400";
 }
 
 function PhaseRibbon({ phase }: { phase?: 1 | 2 | 3 | 4 }) {
@@ -66,12 +53,14 @@ export function TaskCard({ task, agentColor, phase, draggable = true, onClick, o
       {...(draggable ? { ...listeners, ...attributes } : {})}
       data-task-id={task.id}
       tabIndex={0}
+      role="button"
       onFocus={onFocus}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onKeyDown={(e) => {
-        if (e.key === "Enter") {
+        if (e.key === "Enter" || e.key === " ") {
           e.stopPropagation();
+          e.preventDefault();
           onClick?.();
         }
         if (e.key === "Delete" && onDelete) {
@@ -92,6 +81,7 @@ export function TaskCard({ task, agentColor, phase, draggable = true, onClick, o
             hovered ? "opacity-100" : "opacity-0"
           }`}
           title="Delete task"
+          aria-label="Delete task"
         >
           🗑
         </button>

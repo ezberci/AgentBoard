@@ -6,7 +6,7 @@ from vibe_kanban_clone.config import settings
 
 engine = create_async_engine(
     f"sqlite+aiosqlite:///{settings.db_path}",
-    connect_args={"timeout": 5.0},
+    connect_args={"timeout": 5.0, "check_same_thread": False},
     poolclass=StaticPool,
 )
 

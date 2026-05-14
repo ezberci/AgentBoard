@@ -140,16 +140,17 @@ export function Agents() {
                       <button
                         key={skill.id}
                         onClick={() => toggleSkill(agent, skill)}
+                        disabled={assignSkill.isPending || removeSkill.isPending}
                         className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
                           hasSkill
                             ? "bg-accent/20 text-accent ring-1 ring-accent"
                             : "border border-border bg-surface-sunken text-muted-fg hover:text-zinc-200"
-                        }`}
+                        } disabled:opacity-50`}
                       >
                         {skill.name}
                       </button>
                     );
-                  })}
+                  })}'
                   {(!skills || skills.length === 0) && (
                     <span className="text-xs text-muted-fg">No skills available.</span>
                   )}

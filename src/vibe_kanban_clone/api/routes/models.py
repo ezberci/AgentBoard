@@ -1,6 +1,5 @@
 """Model registry routes."""
 
-import os
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from vibe_kanban_clone.api.deps import get_session
 from vibe_kanban_clone.api.routes.ws import broadcast_global
+from vibe_kanban_clone.schemas.common import PaginatedParams
 from vibe_kanban_clone.schemas.model import ModelCreate, ModelRead, ModelUpdate
 from vibe_kanban_clone.services import models as models_service
 
@@ -16,10 +16,11 @@ router = APIRouter()
 
 @router.get("/models", response_model=list[ModelRead])
 async def list_models(
+    pagination: Annotated[PaginatedParams, Depends()],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> list[ModelRead]:
     """List all registered models."""
-    return await models_service.list_models(session)
+    return await models_service.list_models(session, pagination.limit, pagination.offset)
 
 
 @router.post("/models", response_model=ModelRead, status_code=201)
@@ -77,21 +78,3 @@ async def delete_model(
         raise HTTPException(status_code=404, detail="Model not found")
     await models_service.delete_model(session, model)
     await broadcast_global("model.deleted", {"model_id": model_id})
-
-
-@router.get("/models/health")
-async def models_health(
-    session: Annotated[AsyncSession, Depends(get_session)],
-) -> list[dict]:
-    """Check API key env vars for enabled models."""
-    models = await models_service.list_models(session)
-    return [
-        {
-            "id": m.id,
-            "name": m.name,
-            "env_var": m.api_key_env,
-            "env_present": m.api_key_env in os.environ,
-        }
-        for m in models
-        if m.is_enabled
-    ]

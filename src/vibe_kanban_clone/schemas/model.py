@@ -1,23 +1,25 @@
 """Model registry schemas."""
 
-from pydantic import BaseModel
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ModelCreate(BaseModel):
-    name: str
-    provider: str
-    model_id: str
-    api_key_env: str
-    base_url: str | None = None
+    name: str = Field(min_length=1, max_length=255)
+    provider: str = Field(min_length=1, max_length=100)
+    model_id: str = Field(min_length=1, max_length=255)
+    api_key_env: str = Field(min_length=1, max_length=255)
+    base_url: str | None = Field(default=None, min_length=1, max_length=500)
     is_enabled: bool = True
 
 
 class ModelUpdate(BaseModel):
-    name: str | None = None
-    provider: str | None = None
-    model_id: str | None = None
-    api_key_env: str | None = None
-    base_url: str | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    provider: str | None = Field(default=None, min_length=1, max_length=100)
+    model_id: str | None = Field(default=None, min_length=1, max_length=255)
+    api_key_env: str | None = Field(default=None, min_length=1, max_length=255)
+    base_url: str | None = Field(default=None, min_length=1, max_length=500)
     is_enabled: bool | None = None
 
 
@@ -29,7 +31,6 @@ class ModelRead(BaseModel):
     api_key_env: str
     base_url: str | None
     is_enabled: bool
-    created_at: str
+    created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

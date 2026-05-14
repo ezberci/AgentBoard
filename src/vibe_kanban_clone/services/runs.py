@@ -1,6 +1,7 @@
 """Task run execution service."""
 
-from datetime import datetime
+import asyncio
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -11,10 +12,18 @@ from vibe_kanban_clone.models.task import Task
 from vibe_kanban_clone.models.task_run import TaskRun
 from vibe_kanban_clone.services.models import get_model
 
+_RUN_TIMEOUT_SECONDS = 300
 
-async def list_task_runs(session: AsyncSession, task_id: int) -> list[TaskRun]:
+
+async def list_task_runs(
+    session: AsyncSession, task_id: int, limit: int = 50, offset: int = 0
+) -> list[TaskRun]:
     result = await session.scalars(
-        select(TaskRun).where(TaskRun.task_id == task_id).order_by(TaskRun.started_at.desc())
+        select(TaskRun)
+        .where(TaskRun.task_id == task_id)
+        .order_by(TaskRun.started_at.desc())
+        .limit(limit)
+        .offset(offset)
     )
     return list(result.all())
 
@@ -55,8 +64,8 @@ async def execute_task_run(
 
         executor = get_executor(model.provider)
 
-    try:
-        full_output = ""
+    async def _consume() -> str:
+        output = ""
         async for token in executor.run(
             prompt,
             {
@@ -65,12 +74,16 @@ async def execute_task_run(
                 "base_url": model.base_url,
             },
         ):
-            full_output += token
+            output += token
             await broadcast_project(
                 task.project_id,
                 "run.token",
                 {"run_id": run.id, "token": token},
             )
+        return output
+
+    try:
+        full_output = await asyncio.wait_for(_consume(), _RUN_TIMEOUT_SECONDS)
 
         async with async_session_factory() as session:
             run = await session.get(TaskRun, run.id)

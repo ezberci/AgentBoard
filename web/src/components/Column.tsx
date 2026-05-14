@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Column as ColumnType, Task } from "@/types";
@@ -29,6 +29,25 @@ export function Column({ column, tasks, agentMap, totalColumns, projectId, onTas
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(column.name);
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showMenu) return;
+    function handleMouseDown(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setShowMenu(false);
+    }
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showMenu]);
 
   const createTask = useMutation({
     mutationFn: (payload: { project_id: number; column_id: number; title: string; priority: number }) =>
@@ -122,8 +141,9 @@ export function Column({ column, tasks, agentMap, totalColumns, projectId, onTas
               ⋮
             </button>
             {showMenu && (
-              <div className="absolute right-0 top-full z-10 mt-1 w-32 rounded-md border border-border bg-surface shadow-lg">
+              <div ref={menuRef} className="absolute right-0 top-full z-10 mt-1 w-32 rounded-md border border-border bg-surface shadow-lg">
                 <button
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     setShowMenu(false);
                     setEditName(column.name);
@@ -134,6 +154,7 @@ export function Column({ column, tasks, agentMap, totalColumns, projectId, onTas
                   Rename
                 </button>
                 <button
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     setShowMenu(false);
                     if (confirm(`Delete column "${column.name}"?`)) {
@@ -160,9 +181,14 @@ export function Column({ column, tasks, agentMap, totalColumns, projectId, onTas
             onClick={() => onTaskClick?.(task.id)}
             onDelete={() => {
               if (confirm(`Delete task "${task.title}"?`)) {
-                api.deleteTask(task.id).then(() => {
-                  queryClient.invalidateQueries({ queryKey: ["projects", projectId, "tasks"] });
-                });
+                api.deleteTask(task.id)
+                  .then(() => {
+                    queryClient.invalidateQueries({ queryKey: ["projects", projectId, "tasks"] });
+                  })
+                  .catch((err: Error) => {
+                    console.error("Failed to delete task:", err);
+                    alert(`Failed to delete task: ${err.message}`);
+                  });
               }
             }}
           />

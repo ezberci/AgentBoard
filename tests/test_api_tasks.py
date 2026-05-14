@@ -52,9 +52,12 @@ async def test_get_task_api(client: AsyncClient):
     project_resp = await client.post("/api/projects", json={"name": "P"})
     project_id = project_resp.json()["id"]
 
+    col_resp = await client.post(f"/api/projects/{project_id}/columns", json={"name": "Backlog"})
+    col_id = col_resp.json()["id"]
+
     task_resp = await client.post(
         "/api/tasks",
-        json={"project_id": project_id, "title": "T1"},
+        json={"project_id": project_id, "column_id": col_id, "title": "T1"},
     )
     task_id = task_resp.json()["id"]
 
@@ -69,9 +72,12 @@ async def test_update_task_api(client: AsyncClient):
     project_resp = await client.post("/api/projects", json={"name": "P"})
     project_id = project_resp.json()["id"]
 
+    col_resp = await client.post(f"/api/projects/{project_id}/columns", json={"name": "Backlog"})
+    col_id = col_resp.json()["id"]
+
     task_resp = await client.post(
         "/api/tasks",
-        json={"project_id": project_id, "title": "T1"},
+        json={"project_id": project_id, "column_id": col_id, "title": "T1"},
     )
     task_id = task_resp.json()["id"]
 
@@ -90,9 +96,12 @@ async def test_update_task_conflict(client: AsyncClient):
     project_resp = await client.post("/api/projects", json={"name": "P"})
     project_id = project_resp.json()["id"]
 
+    col_resp = await client.post(f"/api/projects/{project_id}/columns", json={"name": "Backlog"})
+    col_id = col_resp.json()["id"]
+
     task_resp = await client.post(
         "/api/tasks",
-        json={"project_id": project_id, "title": "T1"},
+        json={"project_id": project_id, "column_id": col_id, "title": "T1"},
     )
     task_id = task_resp.json()["id"]
 
@@ -136,11 +145,49 @@ async def test_delete_task_api(client: AsyncClient):
     project_resp = await client.post("/api/projects", json={"name": "P"})
     project_id = project_resp.json()["id"]
 
+    col_resp = await client.post(f"/api/projects/{project_id}/columns", json={"name": "Backlog"})
+    col_id = col_resp.json()["id"]
+
     task_resp = await client.post(
         "/api/tasks",
-        json={"project_id": project_id, "title": "T1"},
+        json={"project_id": project_id, "column_id": col_id, "title": "T1"},
     )
     task_id = task_resp.json()["id"]
 
     response = await client.delete(f"/api/tasks/{task_id}")
     assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_run_task_api(client: AsyncClient):
+    project_resp = await client.post("/api/projects", json={"name": "P"})
+    project_id = project_resp.json()["id"]
+
+    col_resp = await client.post(f"/api/projects/{project_id}/columns", json={"name": "Backlog"})
+    col_id = col_resp.json()["id"]
+
+    task_resp = await client.post(
+        "/api/tasks",
+        json={"project_id": project_id, "column_id": col_id, "title": "T1"},
+    )
+    task_id = task_resp.json()["id"]
+
+    model_resp = await client.post(
+        "/api/models",
+        json={
+            "name": "test-model",
+            "provider": "deepseek",
+            "model_id": "deepseek-chat",
+            "api_key_env": "DEEPSEEK_API_KEY",
+        },
+    )
+    model_id = model_resp.json()["id"]
+
+    response = await client.post(
+        f"/api/tasks/{task_id}/run",
+        json={"model_id": model_id, "prompt": "Hello"},
+    )
+    assert response.status_code == 202
+    data = response.json()
+    assert data["status"] == "started"
+    assert data["task_id"] == task_id

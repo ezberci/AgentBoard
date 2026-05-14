@@ -1,14 +1,15 @@
 """Model registry services."""
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from vibe_kanban_clone.models.model import Model
 from vibe_kanban_clone.schemas.model import ModelCreate, ModelUpdate
 
 
-async def list_models(session: AsyncSession) -> list[Model]:
-    result = await session.scalars(select(Model).order_by(Model.name))
+async def list_models(session: AsyncSession, limit: int = 50, offset: int = 0) -> list[Model]:
+    result = await session.scalars(select(Model).order_by(Model.name).limit(limit).offset(offset))
     return list(result.all())
 
 
@@ -19,7 +20,11 @@ async def get_model(session: AsyncSession, model_id: int) -> Model | None:
 async def create_model(session: AsyncSession, data: ModelCreate) -> Model:
     model = Model(**data.model_dump())
     session.add(model)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError as err:
+        await session.rollback()
+        raise ValueError(f"Model with name '{data.name}' already exists") from err
     await session.refresh(model)
     return model
 

@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from vibe_kanban_clone.models.column import Column
     from vibe_kanban_clone.models.project import Project
     from vibe_kanban_clone.models.task_comment import TaskComment
+    from vibe_kanban_clone.models.task_run import TaskRun
 
 
 class Task(Base):
@@ -28,7 +29,9 @@ class Task(Base):
     project_id: Mapped[int] = mapped_column(
         ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
-    column_id: Mapped[int | None] = mapped_column(ForeignKey("columns.id"), nullable=True)
+    column_id: Mapped[int | None] = mapped_column(
+        ForeignKey("columns.id", ondelete="SET NULL"), nullable=True
+    )
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[str | None] = mapped_column(nullable=True)
     priority: Mapped[int] = mapped_column(default=4, nullable=False)

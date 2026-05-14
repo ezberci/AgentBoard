@@ -1,29 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+
+function MarkdownLink({ node, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { node?: unknown }) {
+  return <a {...props} target="_blank" rel="noopener noreferrer" />;
+}
 import { useQueryClient } from "@tanstack/react-query";
 import { useTaskDetail, useUpdateTask, useAddComment } from "@/hooks/useTaskDetail";
 import { useAgents } from "@/hooks/useAgents";
 import { useModels } from "@/hooks/useModels";
 import { useTaskRuns } from "@/hooks/useTaskRuns";
 import { api } from "@/api/client";
+import { priorityClass, priorityLabel } from "@/lib/priority";
 
 interface TaskDetailProps {
   taskId: number | null;
   onClose: () => void;
-}
-
-function priorityLabel(priority: number): string {
-  if (priority <= 1) return "P1";
-  if (priority <= 2) return "P2";
-  if (priority <= 3) return "P3";
-  return "P4";
-}
-
-function priorityClass(priority: number): string {
-  if (priority <= 1) return "bg-red-500/20 text-red-400";
-  if (priority <= 2) return "bg-amber-500/20 text-amber-400";
-  if (priority <= 3) return "bg-blue-500/20 text-blue-400";
-  return "bg-zinc-500/20 text-zinc-400";
 }
 
 function formatDate(iso: string | undefined): string {
@@ -143,6 +134,10 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
     setIsRunning(true);
     try {
       await api.runTask(task.id, { model_id: Number(selectedModelId), prompt: runPrompt });
+      queryClient.invalidateQueries({ queryKey: ["tasks", task.id, "runs"] });
+    } catch (err) {
+      console.error("Failed to run task:", err);
+      alert(`Failed to run task: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsRunning(false);
     }
@@ -152,10 +147,9 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
     <div
       className={`fixed inset-0 z-50 transition-opacity ${
         isOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
-      }`}
+      } bg-black/50`}
       onClick={handleBackdropClick}
     >
-      <div className="absolute inset-0 bg-black/50" />
       <div
         ref={drawerRef}
         className={`absolute right-0 top-0 h-full w-full max-w-md border-l border-border bg-surface shadow-2xl transition-transform duration-300 ${
@@ -207,7 +201,7 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
                   </div>
                   {task.description && (
                     <div className="mt-2 prose prose-invert prose-sm max-w-none">
-                      <ReactMarkdown>{task.description}</ReactMarkdown>
+                      <ReactMarkdown components={{ a: MarkdownLink }}>{task.description}</ReactMarkdown>
                     </div>
                   )}
                 </div>
@@ -246,7 +240,7 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
                       Result
                     </h4>
                     <div className="rounded-md border border-border bg-surface-sunken p-3 text-sm text-zinc-300 prose prose-invert prose-sm max-w-none">
-                      <ReactMarkdown>{task.result}</ReactMarkdown>
+                      <ReactMarkdown components={{ a: MarkdownLink }}>{task.result}</ReactMarkdown>
                     </div>
                   </div>
                 )}
@@ -285,7 +279,7 @@ export function TaskDetail({ taskId, onClose, onDelete }: TaskDetailProps & { on
                     </div>
                     {activeRunId != null && streamingOutput && (
                       <div className="rounded-md border border-border bg-surface-sunken p-3 text-sm text-zinc-300 prose prose-invert prose-sm max-w-none">
-                        <ReactMarkdown>{streamingOutput}</ReactMarkdown>
+                        <ReactMarkdown components={{ a: MarkdownLink }}>{streamingOutput}</ReactMarkdown>
                         <div ref={runEndRef} />
                       </div>
                     )}

@@ -8,11 +8,14 @@ interface WsMessage {
   payload: Record<string, unknown>;
 }
 
+const API_KEY = import.meta.env.VITE_API_KEY ?? "dev-key-change-me";
+
 export function useBoard(projectId: number | null) {
   const queryClient = useQueryClient();
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  const isIntentionalCloseRef = useRef(false);
 
   const columnsQuery = useQuery({
     queryKey: ["projects", projectId, "columns"],
@@ -32,7 +35,7 @@ export function useBoard(projectId: number | null) {
     }
 
     const connect = () => {
-      const ws = new WebSocket(`ws://localhost:8765/ws/projects/${projectId}`);
+      const ws = new WebSocket(`ws://localhost:8765/ws/projects/${projectId}?api_key=${encodeURIComponent(API_KEY)}`);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -116,6 +119,10 @@ export function useBoard(projectId: number | null) {
       };
 
       ws.onclose = () => {
+        if (isIntentionalCloseRef.current) {
+          isIntentionalCloseRef.current = false;
+          return;
+        }
         const backoff = Math.min(1000 * 2 ** reconnectAttemptsRef.current, 30000);
         reconnectAttemptsRef.current += 1;
         reconnectTimeoutRef.current = setTimeout(connect, backoff);
@@ -132,6 +139,7 @@ export function useBoard(projectId: number | null) {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
+      isIntentionalCloseRef.current = true;
       wsRef.current?.close();
     };
   }, [projectId, queryClient]);

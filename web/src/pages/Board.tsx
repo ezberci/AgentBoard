@@ -14,9 +14,10 @@ import { Column } from "@/components/Column";
 import { TaskCard } from "@/components/TaskCard";
 import { TaskDetail } from "@/components/TaskDetail";
 import { api } from "@/api/client";
-import type { Task, Column as ColumnType } from "@/types";
+import type { Task, Column as ColumnType, Agent } from "@/types";
 import { resolveAgentColor } from "@/lib/agentColors";
 import { computePhase } from "@/lib/phase";
+import { priorityClass, priorityLabel } from "@/lib/priority";
 
 type ViewMode = "classic" | "dense" | "swimlanes";
 type StatusFilter = "todo" | "in_progress" | "done";
@@ -28,19 +29,7 @@ function deriveStatus(task: Task, columns: ColumnType[]): StatusFilter {
   return "todo";
 }
 
-function priorityLabel(priority: number): string {
-  if (priority <= 1) return "P1";
-  if (priority <= 2) return "P2";
-  if (priority <= 3) return "P3";
-  return "P4";
-}
-
-function priorityClass(priority: number): string {
-  if (priority <= 1) return "bg-red-500/20 text-red-400";
-  if (priority <= 2) return "bg-amber-500/20 text-amber-400";
-  if (priority <= 3) return "bg-blue-500/20 text-blue-400";
-  return "bg-zinc-500/20 text-zinc-400";
-}
+const UNASSIGNED_AGENT: Agent = { id: -1, name: "Unassigned", color: undefined, system_prompt: undefined, created_at: "", skills: [] };
 
 export function Board() {
   const queryClient = useQueryClient();
@@ -51,6 +40,18 @@ export function Board() {
   const [focusedTaskId, setFocusedTaskId] = useState<number | null>(null);
   const { data: agents } = useAgents();
   const createProject = useCreateProject();
+
+  const handleCloseTaskDetail = useCallback(() => setSelectedTaskId(null), []);
+  const handleDeleteTask = useCallback((id: number) => {
+    api.deleteTask(id)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ["projects", selectedProjectId, "tasks"] });
+      })
+      .catch((err: Error) => {
+        console.error("Failed to delete task:", err);
+        alert(`Failed to delete task: ${err.message}`);
+      });
+  }, [queryClient, selectedProjectId]);
 
   const [viewMode, setViewMode] = useState<ViewMode>("classic");
   const [search, setSearch] = useState("");
@@ -63,12 +64,15 @@ export function Board() {
   const [showAddColumn, setShowAddColumn] = useState(false);
   const [newColumnName, setNewColumnName] = useState("");
 
-  const agentMap = new Map<number, string>();
-  for (const agent of agents ?? []) {
-    if (agent.color) {
-      agentMap.set(agent.id, agent.color);
+  const agentMap = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const agent of agents ?? []) {
+      if (agent.color) {
+        map.set(agent.id, agent.color);
+      }
     }
-  }
+    return map;
+  }, [agents]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -112,7 +116,7 @@ export function Board() {
     return map;
   }, [filteredTasks, columns]);
 
-  const sortedColumns = [...columns].sort((a, b) => a.position - b.position);
+  const sortedColumns = useMemo(() => [...columns].sort((a, b) => a.position - b.position), [columns]);
 
   const getTaskPosition = useCallback(
     (taskId: number) => {
@@ -145,14 +149,12 @@ export function Board() {
         return;
       }
 
-      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter"].includes(e.key)) {
-        e.preventDefault();
-      }
-
       let currentId = focusedTaskId;
       if (currentId == null && filteredTasks.length > 0) {
-        currentId = filteredTasks[0].id;
-        focusTask(currentId);
+        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter"].includes(e.key)) {
+          currentId = filteredTasks[0].id;
+          focusTask(currentId);
+        }
         return;
       }
       if (currentId == null) return;
@@ -162,16 +164,19 @@ export function Board() {
 
       switch (e.key) {
         case "ArrowDown": {
+          e.preventDefault();
           const next = pos.colTasks[pos.taskIdx + 1];
           if (next) focusTask(next.id);
           break;
         }
         case "ArrowUp": {
+          e.preventDefault();
           const prev = pos.colTasks[pos.taskIdx - 1];
           if (prev) focusTask(prev.id);
           break;
         }
         case "ArrowRight": {
+          e.preventDefault();
           const rightCol = sortedColumns[pos.colIdx + 1];
           if (rightCol) {
             const rightTasks = tasksByColumn.get(rightCol.id) ?? [];
@@ -181,6 +186,7 @@ export function Board() {
           break;
         }
         case "ArrowLeft": {
+          e.preventDefault();
           const leftCol = sortedColumns[pos.colIdx - 1];
           if (leftCol) {
             const leftTasks = tasksByColumn.get(leftCol.id) ?? [];
@@ -190,15 +196,15 @@ export function Board() {
           break;
         }
         case "Enter": {
+          e.preventDefault();
           setSelectedTaskId(currentId);
           break;
         }
         case "Delete": {
+          e.preventDefault();
           const task = tasks.find((t) => t.id === currentId);
           if (task && confirm(`Delete task "${task.title}"?`)) {
-            api.deleteTask(currentId).then(() => {
-              queryClient.invalidateQueries({ queryKey: ["projects", selectedProjectId, "tasks"] });
-            });
+            handleDeleteTask(currentId);
           }
           break;
         }
@@ -207,7 +213,7 @@ export function Board() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [focusedTaskId, filteredTasks, selectedTaskId, getTaskPosition, focusTask, sortedColumns, tasksByColumn]);
+  }, [focusedTaskId, filteredTasks, selectedTaskId, getTaskPosition, focusTask, sortedColumns, tasksByColumn, tasks, selectedProjectId, queryClient, handleDeleteTask]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -503,9 +509,7 @@ export function Board() {
                         onClick={() => setSelectedTaskId(task.id)}
                         onDelete={() => {
                           if (confirm(`Delete task "${task.title}"?`)) {
-                            api.deleteTask(task.id).then(() => {
-                              queryClient.invalidateQueries({ queryKey: ["projects", selectedProjectId, "tasks"] });
-                            });
+                            handleDeleteTask(task.id);
                           }
                         }}
                       />
@@ -526,7 +530,7 @@ export function Board() {
                 <div key={col.id} className="text-xs font-semibold uppercase text-muted-fg">{col.name}</div>
               ))}
             </div>
-            {(agents ?? []).concat({ id: -1, name: "Unassigned", color: undefined, system_prompt: undefined, created_at: "", skills: [] }).map((agent) => {
+            {(agents ?? []).concat(UNASSIGNED_AGENT).map((agent) => {
               const agentId = agent.id === -1 ? null : agent.id;
               const isUnassigned = agentId === null;
               return (
@@ -556,9 +560,7 @@ export function Board() {
                               onClick={() => setSelectedTaskId(task.id)}
                               onDelete={() => {
                                 if (confirm(`Delete task "${task.title}"?`)) {
-                                  api.deleteTask(task.id).then(() => {
-                                    queryClient.invalidateQueries({ queryKey: ["projects", selectedProjectId, "tasks"] });
-                                  });
+                                  handleDeleteTask(task.id);
                                 }
                               }}
                             />
@@ -579,12 +581,8 @@ export function Board() {
 
       <TaskDetail
         taskId={selectedTaskId}
-        onClose={() => setSelectedTaskId(null)}
-        onDelete={(id) => {
-          api.deleteTask(id).then(() => {
-            queryClient.invalidateQueries({ queryKey: ["projects", selectedProjectId, "tasks"] });
-          });
-        }}
+        onClose={handleCloseTaskDetail}
+        onDelete={handleDeleteTask}
       />
     </div>
   );

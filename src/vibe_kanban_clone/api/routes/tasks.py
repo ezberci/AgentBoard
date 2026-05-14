@@ -3,13 +3,15 @@
 import asyncio
 from typing import Annotated
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from vibe_kanban_clone.api.deps import get_session
 from vibe_kanban_clone.api.routes.ws import broadcast_project
 from vibe_kanban_clone.db.engine import async_session_factory
-from vibe_kanban_clone.schemas.task import TaskCreate, TaskMove, TaskRead, TaskUpdate
+from vibe_kanban_clone.schemas.common import PaginatedParams
+from vibe_kanban_clone.schemas.task import TaskCreate, TaskMove, TaskRead, TaskRunCreate, TaskUpdate
 from vibe_kanban_clone.schemas.task_comment import TaskCommentCreate, TaskCommentRead
 from vibe_kanban_clone.schemas.task_run import TaskRunRead
 from vibe_kanban_clone.services import comments as comments_service
@@ -18,18 +20,24 @@ from vibe_kanban_clone.services import runs as runs_service
 from vibe_kanban_clone.services import tasks as tasks_service
 
 router = APIRouter()
+logger = structlog.get_logger()
+_bg_tasks: set[asyncio.Task] = set()
+_run_semaphore = asyncio.Semaphore(5)
 
 
 @router.get("/projects/{project_id}/tasks", response_model=list[TaskRead])
 async def list_tasks(
     project_id: int,
+    pagination: Annotated[PaginatedParams, Depends()],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> list[TaskRead]:
     """List all tasks in a project."""
     project = await projects_service.get_project(session, project_id)
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
-    return await tasks_service.list_tasks_by_project(session, project_id)
+    return await tasks_service.list_tasks_by_project(
+        session, project_id, pagination.limit, pagination.offset
+    )
 
 
 @router.post("/tasks", response_model=TaskRead, status_code=201)
@@ -69,6 +77,8 @@ async def update_task(
     task = await tasks_service.get_task(session, task_id)
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found")
+    if data.expected_version is None:
+        data.expected_version = task.version
     try:
         task = await tasks_service.update_task(session, task, data)
     except ValueError:
@@ -109,6 +119,8 @@ async def move_task(
     task = await tasks_service.get_task(session, task_id)
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found")
+    if data.expected_version is None:
+        data.expected_version = task.version
     try:
         task = await tasks_service.move_task(session, task, data)
     except ValueError:
@@ -143,7 +155,7 @@ async def create_comment(
 @router.post("/tasks/{task_id}/run", status_code=202)
 async def run_task(
     task_id: int,
-    data: dict,
+    data: TaskRunCreate,
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> dict:
     """Start a task execution run."""
@@ -151,19 +163,35 @@ async def run_task(
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    model_id = data.get("model_id")
-    prompt = data.get("prompt", task.description or task.title)
-    if model_id is None:
-        raise HTTPException(status_code=400, detail="model_id is required")
+    prompt = data.prompt if data.prompt is not None else (task.description or task.title)
 
-    asyncio.create_task(
-        runs_service.execute_task_run(
-            async_session_factory,
-            task_id,
-            model_id,
-            prompt,
+    try:
+        await asyncio.wait_for(_run_semaphore.acquire(), timeout=1.0)
+    except TimeoutError:
+        raise HTTPException(status_code=503, detail="Server busy, try again later") from None
+
+    try:
+        task_ref = asyncio.create_task(
+            runs_service.execute_task_run(
+                async_session_factory,
+                task_id,
+                data.model_id,
+                prompt,
+            )
         )
-    )
+    except Exception:
+        _run_semaphore.release()
+        raise
+
+    _bg_tasks.add(task_ref)
+
+    def _on_task_done(t: asyncio.Task) -> None:
+        _bg_tasks.discard(t)
+        _run_semaphore.release()
+        if exc := t.exception():
+            logger.error("task_run_failed", error=str(exc))
+
+    task_ref.add_done_callback(_on_task_done)
 
     return {"status": "started", "task_id": task_id}
 
@@ -171,10 +199,11 @@ async def run_task(
 @router.get("/tasks/{task_id}/runs", response_model=list[TaskRunRead])
 async def list_task_runs(
     task_id: int,
+    pagination: Annotated[PaginatedParams, Depends()],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> list[TaskRunRead]:
     """List execution runs for a task."""
     task = await tasks_service.get_task(session, task_id)
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found")
-    return await runs_service.list_task_runs(session, task_id)
+    return await runs_service.list_task_runs(session, task_id, pagination.limit, pagination.offset)

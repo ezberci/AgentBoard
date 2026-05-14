@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from vibe_kanban_clone.api.deps import get_session
 from vibe_kanban_clone.schemas.agent import AgentCreate, AgentRead, AgentUpdate
+from vibe_kanban_clone.schemas.common import PaginatedParams
 from vibe_kanban_clone.services import agents as agents_service
 from vibe_kanban_clone.services import skills as skills_service
 
@@ -15,10 +16,11 @@ router = APIRouter()
 
 @router.get("/agents", response_model=list[AgentRead])
 async def list_agents(
+    pagination: Annotated[PaginatedParams, Depends()],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> list[AgentRead]:
     """List all agents."""
-    return await agents_service.list_agents(session)
+    return await agents_service.list_agents(session, pagination.limit, pagination.offset)
 
 
 @router.post("/agents", response_model=AgentRead, status_code=201)

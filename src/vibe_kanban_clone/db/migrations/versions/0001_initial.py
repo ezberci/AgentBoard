@@ -72,6 +72,9 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["project_id"], ["projects.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
+    op.create_index(
+        "idx_columns_project_position", "columns", ["project_id", "position"], unique=False
+    )
     op.create_table(
         "tasks",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -87,7 +90,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(["assigned_agent_id"], ["agents.id"], ondelete="SET NULL"),
-        sa.ForeignKeyConstraint(["column_id"], ["columns.id"]),
+        sa.ForeignKeyConstraint(["column_id"], ["columns.id"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["project_id"], ["projects.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -121,6 +124,7 @@ def downgrade() -> None:
     op.drop_index("idx_tasks_project_column", table_name="tasks")
     op.drop_index("idx_tasks_agent_claimed", table_name="tasks")
     op.drop_table("tasks")
+    op.drop_index("idx_columns_project_position", table_name="columns")
     op.drop_table("columns")
     op.drop_table("agent_skills")
     op.drop_table("skills")

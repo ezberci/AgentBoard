@@ -21,13 +21,21 @@ from vibe_kanban_clone.services import tasks as tasks_service
 
 
 @mcp.tool()
-async def get_context() -> dict[str, Any]:
-    """Return current project context with columns and recent tasks."""
+async def get_context(project_id: int | None = None) -> dict[str, Any]:
+    """Return current project context with columns and recent tasks.
+
+    If project_id is not provided, falls back to the first project.
+    """
     async with AsyncSession(_engine_module.engine) as session:
-        projects = await projects_service.list_projects(session)
-        if not projects:
-            return {"current_project": None, "columns": [], "recent_tasks": []}
-        current_project = projects[0]
+        if project_id is not None:
+            current_project = await projects_service.get_project(session, project_id)
+            if current_project is None:
+                return {"current_project": None, "columns": [], "recent_tasks": []}
+        else:
+            projects = await projects_service.list_projects(session)
+            if not projects:
+                return {"current_project": None, "columns": [], "recent_tasks": []}
+            current_project = projects[0]
         columns = await columns_service.list_columns_by_project(session, current_project.id)
         tasks = await tasks_service.list_tasks_by_project(session, current_project.id)
         recent_tasks = sorted(tasks, key=lambda t: t.created_at, reverse=True)[:10]
@@ -130,7 +138,9 @@ async def update_task(
         task = await tasks_service.get_task(session, task_id)
         if task is None:
             return None
-        data = TaskUpdate(description=description, result=result, priority=priority)
+        data = TaskUpdate(
+            description=description, result=result, priority=priority, expected_version=task.version
+        )
         updated = await tasks_service.update_task(session, task, data)
         from vibe_kanban_clone.api.routes.ws import broadcast_project
 
@@ -236,6 +246,13 @@ async def claim_next_task(agent_id: int, project_id: int) -> dict[str, Any] | No
         claimed = await tasks_service.claim_next_task(session, agent_id, project_id)
         if claimed is None:
             return None
+        from vibe_kanban_clone.api.routes.ws import broadcast_project
+
+        await broadcast_project(
+            project_id,
+            "task.claimed",
+            TaskRead.model_validate(claimed).model_dump(mode="json"),
+        )
         return TaskRead.model_validate(claimed).model_dump(mode="json")
 
 
@@ -247,6 +264,13 @@ async def complete_task(task_id: int, result: str) -> dict[str, Any] | None:
         if task is None:
             return None
         completed = await tasks_service.complete_task(session, task, result)
+        from vibe_kanban_clone.api.routes.ws import broadcast_project
+
+        await broadcast_project(
+            completed.project_id,
+            "task.completed",
+            TaskRead.model_validate(completed).model_dump(mode="json"),
+        )
         return TaskRead.model_validate(completed).model_dump(mode="json")
 
 

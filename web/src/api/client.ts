@@ -1,12 +1,14 @@
 import type { Project, Column, Task, Agent, Skill, TaskComment, Model, TaskRun } from "@/types";
 
-const BASE_URL = "http://localhost:8765/api";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8765/api";
+const API_KEY = import.meta.env.VITE_API_KEY ?? "dev-key-change-me";
 
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
+      "x-api-key": API_KEY,
       ...init?.headers,
     },
     ...init,
