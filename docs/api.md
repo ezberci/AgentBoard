@@ -2,6 +2,8 @@
 
 > REST endpoints and WebSocket events.
 
+All API endpoints (except `/api/health`) require the `x-api-key` header.
+
 ## 1. REST Endpoints
 
 ### 1.1 Projects
@@ -22,7 +24,7 @@
 | `POST` | `/api/projects/{id}/columns` | Create column |
 | `PATCH` | `/api/columns/{id}` | Update column |
 | `DELETE` | `/api/columns/{id}` | Delete column |
-| `POST` | `/api/columns/{id}/reorder` | Reorder column |
+| `POST` | `/api/columns/{id}/reorder` | Reorder columns |
 
 ### 1.3 Tasks
 
@@ -60,7 +62,7 @@
 | `PATCH` | `/api/skills/{id}` | Update skill |
 | `DELETE` | `/api/skills/{id}` | Delete skill |
 
-### 1.6 Models (V2)
+### 1.6 Models
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -75,16 +77,19 @@
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/health` | Health check |
+| `GET` | `/api/health` | Health check (no auth) |
 | `GET` | `/api/mcp-info` | MCP setup snippet |
 
 ## 2. Request/Response Examples
+
+All examples include the required `x-api-key` header.
 
 ### Create Task
 
 ```bash
 curl -X POST http://localhost:8765/api/tasks \
   -H "Content-Type: application/json" \
+  -H "x-api-key: dev-key-change-me" \
   -d '{"project_id":1,"column_id":1,"title":"Fix bug","priority":2}'
 ```
 
@@ -93,6 +98,7 @@ curl -X POST http://localhost:8765/api/tasks \
 ```bash
 curl -X POST http://localhost:8765/api/tasks/42/move \
   -H "Content-Type: application/json" \
+  -H "x-api-key: dev-key-change-me" \
   -d '{"column_id":3,"expected_version":5}'
 ```
 
@@ -101,6 +107,7 @@ curl -X POST http://localhost:8765/api/tasks/42/move \
 ```bash
 curl -X POST http://localhost:8765/api/tasks/42/run \
   -H "Content-Type: application/json" \
+  -H "x-api-key: dev-key-change-me" \
   -d '{"model_id":1,"prompt":"Implement auth"}'
 ```
 
@@ -112,7 +119,8 @@ Response: `202 Accepted`
 ### Models Health
 
 ```bash
-curl http://localhost:8765/api/models/health
+curl http://localhost:8765/api/models/health \
+  -H "x-api-key: dev-key-change-me"
 ```
 
 Response:
@@ -131,7 +139,7 @@ Response:
 | `task.created` | `{ task }` | POST /api/tasks |
 | `task.moved` | `{ task }` | POST /api/tasks/{id}/move |
 | `task.updated` | `{ task }` | PATCH /api/tasks/{id} |
-| `task.deleted` | `{ task_id, column_id }` | DELETE /api/tasks/{id} |
+| `task.deleted` | `{ task_id }` | DELETE /api/tasks/{id} |
 | `task.claimed` | `{ task }` | MCP claim_next_task |
 | `comment.created` | `{ comment }` | POST /api/tasks/{id}/comments |
 | `column.created` | `{ column }` | POST /api/projects/{id}/columns |
@@ -159,6 +167,8 @@ Response:
 
 | Status | Meaning | Context |
 |--------|---------|---------|
-| `400` | Bad Request | Missing `model_id` in run |
+| `400` | Bad Request | Validation error (Zod) |
+| `401` | Unauthorized | Missing or invalid `x-api-key` |
 | `404` | Not Found | Entity does not exist |
 | `409` | Conflict | `expected_version` mismatch |
+| `503` | Service Unavailable | Max concurrent runs exceeded |

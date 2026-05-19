@@ -31,7 +31,7 @@ AgentBoard/
 │   │   │   ├── agents.ts
 │   │   │   ├── skills.ts
 │   │   │   ├── models.ts
-│   │   │   └── health.ts
+│   │   │   └── mcpInfo.ts
 │   │   ├── services/
 │   │   │   └── (same 7 service files)
 │   │   ├── middleware/
