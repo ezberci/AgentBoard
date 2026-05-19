@@ -298,7 +298,7 @@ export function Board() {
   return (
     <div className="flex h-full flex-col bg-surface-sunken text-zinc-100">
       <header className="flex items-center gap-4 border-b border-border bg-surface px-6 py-3">
-        <h1 className="text-xl font-bold tracking-tight">Vibe Kanban</h1>
+        <h1 className="text-xl font-bold tracking-tight">Agent Board</h1>
         <div className="flex items-center gap-2">
           <label htmlFor="project-select" className="text-base text-muted-fg">Project</label>
           <select

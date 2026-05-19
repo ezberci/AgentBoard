@@ -13,7 +13,7 @@ export function App() {
   return (
     <div className="flex h-screen flex-col bg-surface-sunken text-zinc-100">
       <nav className="flex items-center gap-2 border-b border-border bg-surface px-6 py-3">
-        <h1 className="mr-4 text-xl font-bold tracking-tight">Vibe Kanban</h1>
+        <h1 className="mr-4 text-xl font-bold tracking-tight">Agent Board</h1>
         <NavButton active={page === "board"} onClick={() => setPage("board")}>
           Board
         </NavButton>

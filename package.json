@@ -1,0 +1,21 @@
+{
+  "name": "agentboard",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "web",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w web\" --names server,web --prefix-colors cyan,magenta",
+    "check": "npm run check -w server && npm run check -w web",
+    "test": "npm run test -w server",
+    "db:generate": "npm run db:generate -w server",
+    "db:migrate": "npm run db:migrate -w server",
+    "db:seed": "npm run db:seed -w server",
+    "mcp": "npm run mcp -w server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

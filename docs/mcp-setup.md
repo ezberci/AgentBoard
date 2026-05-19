@@ -1,10 +1,10 @@
-# Vibe Kanban — MCP Setup
+# Agent Board — MCP Setup
 
 The project ships with an MCP server that exposes Kanban operations to Claude Code (or any MCP client).
 
 ## Installation
 
-The MCP server is part of the `vibe-kanban-clone` package and uses the official Python `mcp` SDK.
+The MCP server is part of the `agent-board-clone` package and uses the official Python `mcp` SDK.
 
 ```bash
 uv sync

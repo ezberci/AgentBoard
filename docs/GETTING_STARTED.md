@@ -1,34 +1,26 @@
 # Getting Started
 
-> Setup, run, and develop Vibe Kanban Clone.
+> Setup, run, and develop Agent Board.
 
 ## 1. Prerequisites
 
-- Python 3.11+
-- `uv` (Python package manager)
 - Node.js 20+ + `npm`
 
 ## 2. Installation
 
 ```bash
-# Clone (or cd into existing directory)
 cd /Users/arif/Desktop/AgentBoard
-
-# Install Python dependencies
-uv sync --all-extras --all-groups
-
-# Install frontend dependencies
-cd web && npm install && cd ..
+npm install
 ```
 
 ## 3. Database Setup
 
 ```bash
-# Run migrations
-uv run alembic upgrade head
+# Prisma client generation (auto-runs on install)
+npm run db:generate -w server
 
 # Optional: seed with sample data
-uv run python scripts/seed.py
+npm run db:seed
 ```
 
 ## 4. Running
@@ -36,13 +28,13 @@ uv run python scripts/seed.py
 ### 4.1 Backend Only
 
 ```bash
-uv run uvicorn vibe_kanban_clone.api.app:app --host 127.0.0.1 --port 8765
+npm run dev -w server
 ```
 
 ### 4.2 Frontend Only
 
 ```bash
-cd web && npm run dev
+npm run dev -w web
 ```
 
 ### 4.3 Both (concurrent)
@@ -58,22 +50,18 @@ Frontend: `http://localhost:5173`
 
 ```bash
 # Full suite
-uv run pytest
+npm run test -w server
 
-# With coverage (optional)
-uv run pytest --cov=src/vibe_kanban_clone
+# Watch mode
+npm run test:watch -w server
 ```
 
-Tests use in-memory SQLite and `AsyncClient` against the FastAPI app.
+Tests use in-memory SQLite and `supertest` against the Hono app.
 
-## 6. Lint / Format
+## 6. Type Check
 
 ```bash
-# Format
-uv run ruff format src tests
-
-# Lint
-uv run ruff check src tests
+npm run build -w server
 ```
 
 ## 7. MCP Setup
@@ -81,10 +69,8 @@ uv run ruff check src tests
 You can copy the MCP server snippet from the **Settings** page in the UI (top-right nav), or run:
 
 ```bash
-set -a; source .env; set +a
-claude mcp add vibe-kanban -- \
-  uv --directory /Users/arif/Desktop/AgentBoard \
-  run python -m vibe_kanban_clone.mcp
+claude mcp add agent-board -- \
+  npm run mcp -w /Users/arif/Desktop/AgentBoard/server
 ```
 
 Verify in Claude Code with `/mcp`.
@@ -107,13 +93,13 @@ The **Settings** page also shows model environment variable health (`/api/models
 When modifying code, respect these boundaries:
 
 | Layer | Responsibility |
-|-------|---------------|
-| `api/routes/` | HTTP input validation, broadcast WS events |
-| `services/` | Business logic, atomic operations |
-| `models/` | ORM definitions only |
-| `schemas/` | Pydantic validation |
-| `executors/` | LLM API integration |
-| `mcp/` | MCP tool definitions |
+|---|---|
+| `server/src/routes/` | HTTP input validation, broadcast WS events |
+| `server/src/services/` | Business logic, atomic operations |
+| `server/src/prisma/` | Prisma schema + client |
+| `server/src/schemas/` | Zod validation |
+| `server/src/executors/` | LLM API integration |
+| `server/src/mcp/` | MCP tool definitions |
 | `web/src/api/` | REST client |
 | `web/src/hooks/` | React Query + mutations |
 | `web/src/pages/` | Page-level components |

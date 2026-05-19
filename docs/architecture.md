@@ -1,53 +1,61 @@
 # Architecture
 
-> High-level system design for Vibe Kanban Clone.
+> High-level system design for Agent Board.
 
 ## 1. Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| Backend | FastAPI, SQLAlchemy 2.x async, Alembic, Pydantic v2, structlog |
+|---|---|
+| Backend | Hono, Prisma, Zod, Pino |
 | Database | SQLite (local-only, `127.0.0.1`, no auth) |
 | Frontend | Vite + React 18 + TypeScript + Tailwind CSS |
-| Realtime | WebSocket (`/ws/projects/{id}` + `/ws/global`) |
+| Realtime | WebSocket (`ws` library, `/ws/projects/{id}` + `/ws/global`) |
 | DnD | `@dnd-kit/core` |
 | State | React Query (TanStack) + WebSocket reconcile |
-| MCP | Official Python `mcp` SDK, stdio transport |
+| MCP | `@modelcontextprotocol/sdk`, stdio transport |
 | Executor | DeepSeek API (OpenAI-compatible streaming) |
 
 ## 2. Directory Layout
 
 ```
 AgentBoard/
-├── src/vibe_kanban_clone/      # Python backend
-│   ├── api/
-│   │   ├── app.py              # FastAPI factory + CORS
-│   │   ├── deps.py             # DB session dependency
-│   │   └── routes/
-│   │       ├── projects.py
-│   │       ├── columns.py
-│   │       ├── tasks.py        # + run endpoint
-│   │       ├── agents.py
-│   │       ├── skills.py
-│   │       ├── models.py       # Model registry CRUD
-│   │       ├── mcp_info.py
-│   │       └── ws.py           # WebSocket manager
-│   ├── db/
-│   │   ├── engine.py           # SQLite engine + session factory
-│   │   ├── base.py             # SQLAlchemy DeclarativeBase
-│   │   └── migrations/
-│   ├── models/                 # ORM entities
-│   ├── schemas/                # Pydantic v2 schemas
-│   ├── services/               # Business logic
-│   ├── executors/              # LLM executor implementations
-│   └── mcp/                    # MCP server (stdio)
+├── server/                     # TypeScript backend
+│   ├── src/
+│   │   ├── index.ts            # Hono app + WS upgrade
+│   │   ├── prisma/
+│   │   │   └── schema.prisma   # DB schema
+│   │   ├── routes/
+│   │   │   ├── projects.ts
+│   │   │   ├── columns.ts
+│   │   │   ├── tasks.ts        # + /run + /comments
+│   │   │   ├── agents.ts
+│   │   │   ├── skills.ts
+│   │   │   ├── models.ts
+│   │   │   └── health.ts
+│   │   ├── services/
+│   │   │   └── (same 7 service files)
+│   │   ├── middleware/
+│   │   │   └── auth.ts         # x-api-key check
+│   │   ├── ws/
+│   │   │   └── manager.ts      # in-memory connection manager
+│   │   ├── executors/
+│   │   │   ├── base.ts
+│   │   │   ├── deepseek.ts
+│   │   │   └── registry.ts
+│   │   ├── mcp/
+│   │   │   ├── server.ts
+│   │   │   └── tools.ts        # 18 tools
+│   │   └── lib/
+│   │       └── logger.ts       # pino
+│   ├── tests/
+│   ├── package.json
+│   └── tsconfig.json
 ├── web/src/                    # React frontend
 │   ├── api/client.ts           # Typed REST client
 │   ├── hooks/                  # React Query hooks
 │   ├── pages/                  # Top-level pages
 │   ├── components/             # Reusable UI components
 │   └── lib/                    # Utilities (agentColors, phase)
-├── tests/                      # pytest suite
 └── docs/                       # This directory
 ```
 
@@ -56,7 +64,7 @@ AgentBoard/
 ### 3.1 Task Lifecycle
 
 ```
-[User] → REST POST /api/tasks → [FastAPI] → [Service] → [SQLite]
+[User] → REST POST /api/tasks → [Hono] → [Service] → [SQLite]
                      ↓
               [WS broadcast: task.created]
                      ↓
@@ -70,7 +78,7 @@ AgentBoard/
 ```
 [User drags card] → React Query setQueryData (optimistic)
          ↓
-[REST POST /api/tasks/{id}/move] → FastAPI → Service → SQLite
+[REST POST /api/tasks/{id}/move] → Hono → Service → SQLite
          ↓
 [Success] → WS broadcast task.moved → Frontend reconciles
 [Failure] → Rollback setQueryData to previous state
@@ -79,9 +87,9 @@ AgentBoard/
 ### 3.3 Task Run (Executor)
 
 ```
-[User clicks Run] → POST /api/tasks/{id}/run → FastAPI
+[User clicks Run] → POST /api/tasks/{id}/run → Hono
          ↓
-[Asyncio background task] → Executor.run() → DeepSeek API
+[Background Promise] → Executor.run() → DeepSeek API
          ↓
 [Streaming tokens] → WS run.token events → Frontend live output
          ↓
@@ -91,7 +99,7 @@ AgentBoard/
 ### 3.4 MCP Claim
 
 ```
-[Claude Code] → MCP claim_next_task(tool) → FastAPI Service
+[Claude Code] → MCP claim_next_task(tool) → Hono Service
          ↓
 [Atomic UPDATE ... RETURNING] → SQLite
          ↓
@@ -101,24 +109,25 @@ AgentBoard/
 ## 4. Key Design Decisions
 
 | Decision | Rationale |
-|----------|-----------|
-| SQLite + StaticPool | Single-user local app; simplicity over scale |
+|---|---|
+| SQLite + Prisma | Single-user local app; simplicity over scale |
 | `version` INTEGER on tasks | Optimistic locking; 409 Conflict on mismatch |
 | WS reconcile via `setQueryData` | Fast UI updates; `invalidateQueries` fallback on error |
 | `UPDATE...RETURNING` for claim | Atomic claim prevents race conditions |
 | Separate `task_runs` table | Keeps execution history; task result is user-managed |
-| Executor rollback + cleanup session | SQLAlchemy session invalidation after exception |
+| Executor rollback + cleanup session | Prisma transaction rollback after exception |
 
 ## 5. CORS
 
-```python
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+```ts
+app.use(
+  cors({
+    origin: ["http://localhost:5173"],
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowHeaders: ["Authorization", "Content-Type", "x-api-key"],
+    credentials: true,
+  })
+);
 ```
 
 ## 6. Environment

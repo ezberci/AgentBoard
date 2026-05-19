@@ -1,12 +1,12 @@
-# Vibe Kanban — Development Plan
+# Agent Board — Development Plan
 
 ## Tech Stack
-- Backend: FastAPI + SQLAlchemy 2.x async + Alembic + Pydantic v2 + structlog
-- DB: SQLite (local-only, async via aiosqlite)
-- MCP: official Python `mcp` SDK, stdio transport
+- Backend: Hono + Prisma + Pino + Zod
+- DB: SQLite (local-only, sync via `better-sqlite3` driver through Prisma)
+- MCP: `@modelcontextprotocol/sdk`, stdio transport
 - Frontend: Vite + React 18 + TypeScript + @dnd-kit/core + @tanstack/react-query + tailwindcss
-- Realtime: WebSocket (`/ws/projects/{id}` + `/ws/global`)
-- Tooling: `uv`, `ruff`, `pytest`
+- Realtime: WebSocket (`ws` library, `/ws/projects/{id}` + `/ws/global`)
+- Tooling: `npm`, `tsx`, `vitest`
 
 ## Data Model (Phase 1)
 
@@ -25,11 +25,6 @@ task_comments (id PK, task_id FK -> tasks ON DELETE CASCADE, author TEXT, body T
 - `idx_tasks_project_column ON tasks(project_id, column_id, priority ASC)`
 - `idx_tasks_agent_claimed ON tasks(assigned_agent_id, claimed_at)`
 - `idx_task_comments_task_created ON task_comments(task_id, created_at)`
-
-## SQLite Engine Config
-- `StaticPool`, `connect_args={"timeout": 5.0}`
-- PRAGMAs on connect: `busy_timeout=5000`, `foreign_keys=ON`, `synchronous=NORMAL`
-- WAL set once during seed/setup, not runtime
 
 ## REST Endpoints
 
@@ -79,19 +74,10 @@ task_comments (id PK, task_id FK -> tasks ON DELETE CASCADE, author TEXT, body T
 
 ## Key Implementation Rules
 1. `version` INTEGER on tasks for optimistic locking. PATCH and move check `expected_version`; mismatch → 409.
-2. Always `await session.commit()` BEFORE WebSocket broadcast.
+2. Always commit BEFORE WebSocket broadcast.
 3. Atomic `claim_next_task` via single `UPDATE ... RETURNING` statement (Phase 3).
 4. `derive_status(task)`: terminal column → "done", claimed_at is None → "todo", else "in_progress".
 5. Agent color: slug from initials (first 2 chars), dedupe with suffix (fb → fb2 → fb3).
 6. Project slug: slugify(name), dedupe with suffix.
 7. `journal_mode=WAL` set in seed/setup, not runtime.
-8. Tests: in-memory SQLite, `pytest-asyncio`, independent tests.
-
-## Phase 1a Acceptance Criteria
-- `curl -X POST /api/tasks` creates a task and `GET /api/tasks/{id}` returns it.
-- `curl -X POST /api/projects` creates a project with auto-slug.
-- `curl -X GET /api/projects/{id}/columns` returns columns.
-- `curl -X GET /api/projects/{id}/tasks` returns tasks.
-- Alembic migration `0001_initial.py` exists and applies cleanly.
-- `uv run pytest` passes (at least model and route tests).
-- `uv run ruff format && uv run ruff check` passes.
+8. Tests: in-memory SQLite, Vitest, independent tests.

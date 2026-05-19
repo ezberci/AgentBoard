@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  columns Column[]
+  tasks   Task[]
+
+  @@map("projects")
+}
+
+model Column {
+  id          Int      @id @default(autoincrement())
+  project_id  Int
+  name        String
+  position    Int      @default(0)
+  is_terminal Boolean  @default(false)
+  created_at  DateTime @default(now())
+
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  tasks   Task[]
+
+  @@index([project_id, position], name: "idx_columns_project_position")
+  @@map("columns")
+}
+
+model Task {
+  id                Int       @id @default(autoincrement())
+  project_id        Int
+  column_id         Int?
+  title             String
+  description       String?
+  priority          Int       @default(4)
+  result            String?
+  assigned_agent_id Int?
+  version           Int       @default(1)
+  claimed_at        DateTime?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  project       Project       @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  column        Column?       @relation(fields: [column_id], references: [id], onDelete: SetNull)
+  assignedAgent Agent?        @relation(fields: [assigned_agent_id], references: [id], onDelete: SetNull)
+  comments      TaskComment[]
+  runs          TaskRun[]
+
+  @@index([project_id, column_id, priority], name: "idx_tasks_project_column")
+  @@index([assigned_agent_id, claimed_at], name: "idx_tasks_agent_claimed")
+  @@map("tasks")
+}
+
+model Agent {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique
+  system_prompt String?
+  color         String?  @unique
+  created_at    DateTime @default(now())
+
+  tasks       Task[]
+  runs        TaskRun[]
+  agentSkills AgentSkill[]
+
+  @@map("agents")
+}
+
+model Skill {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique
+  description   String?
+  instructions  String?
+  allowed_tools String?
+  created_at    DateTime @default(now())
+
+  agentSkills AgentSkill[]
+
+  @@map("skills")
+}
+
+model AgentSkill {
+  agent_id Int
+  skill_id Int
+
+  agent Agent @relation(fields: [agent_id], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skill_id], references: [id], onDelete: Cascade)
+
+  @@id([agent_id, skill_id])
+  @@map("agent_skills")
+}
+
+model TaskComment {
+  id         Int      @id @default(autoincrement())
+  task_id    Int
+  author     String
+  body       String
+  created_at DateTime @default(now())
+
+  task Task @relation(fields: [task_id], references: [id], onDelete: Cascade)
+
+  @@index([task_id, created_at], name: "idx_task_comments_task_created")
+  @@map("task_comments")
+}
+
+model Model {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  provider   String
+  model_id   String
+  api_key_env String
+  base_url   String?
+  is_enabled Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  runs TaskRun[]
+
+  @@index([provider, is_enabled], name: "idx_models_provider_enabled")
+  @@map("models")
+}
+
+model TaskRun {
+  id          Int       @id @default(autoincrement())
+  task_id     Int
+  model_id    Int?
+  agent_id    Int?
+  status      String
+  prompt      String?
+  output      String?
+  usage       String?
+  started_at  DateTime?
+  finished_at DateTime?
+  error       String?
+
+  task  Task   @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  model Model? @relation(fields: [model_id], references: [id], onDelete: SetNull)
+  agent Agent? @relation(fields: [agent_id], references: [id], onDelete: SetNull)
+
+  @@index([task_id, started_at(sort: Desc)], name: "idx_task_runs_task_started")
+  @@map("task_runs")
+}

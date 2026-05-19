@@ -4,20 +4,16 @@
 
 ## 1. What is MCP?
 
-MCP (Model Context Protocol) allows Claude Code to interact with the Vibe Kanban backend via tools. The server uses stdio transport (Claude Code default).
+MCP (Model Context Protocol) allows Claude Code to interact with the Agent Board backend via tools. The server uses stdio transport (Claude Code default).
 
 ## 2. Setup
 
 ### 2.1 Register MCP Server
 
 ```bash
-# Ensure .env is loaded
-set -a; source .env; set +a
-
 # Add to Claude Code
-claude mcp add vibe-kanban -- \
-  uv --directory /Users/arif/Desktop/AgentBoard \
-  run python -m vibe_kanban_clone.mcp
+claude mcp add agent-board -- \
+  npm run mcp -w /Users/arif/Desktop/AgentBoard/server
 ```
 
 ### 2.2 Verify Connection
@@ -32,7 +28,7 @@ Check that `vibe-kanban` appears in the tool list.
 ## 3. Available Tools
 
 | Tool | Description |
-|------|-------------|
+|---|---|
 | `get_context()` | Returns `{current_project, columns, recent_tasks}` |
 | `list_projects()` | All projects |
 | `get_project(project_id)` | Project detail |
@@ -41,15 +37,12 @@ Check that `vibe-kanban` appears in the tool list.
 | `create_task(...)` | Create new task |
 | `update_task(...)` | Update description, result, priority |
 | `delete_task(task_id)` | Delete task |
-| `move_task(task_id, column_id)` | Move task to column |
 | `list_agents()` | All agents |
 | `get_agent(agent_id)` | Agent with skills |
 | `list_skills()` | All skills |
 | `get_skill(skill_id)` | Skill detail |
-| `list_models()` | All registered models |
 | `assign_agent_to_task(...)` | Assign agent |
 | `unassign_agent(task_id)` | Remove assignment |
-| `assign_model_to_task(...)` | Assign model (V2) |
 | `claim_next_task(agent_id, project_id)` | **Atomic task pickup** |
 | `complete_task(task_id, result)` | Write result + move to terminal column |
 | `add_task_comment(...)` | Add comment |
@@ -83,7 +76,7 @@ This guarantees only one agent claims the next available task, even with concurr
 `list_tasks` accepts a `status` filter derived from columns:
 
 | Status | SQL Condition |
-|--------|--------------|
+|---|---|
 | `todo` | `claimed_at IS NULL` |
 | `in_progress` | `claimed_at IS NOT NULL AND column.is_terminal = FALSE` |
 | `done` | `column.is_terminal = TRUE` |
@@ -103,12 +96,11 @@ Claude will:
 
 ## 7. Env Loading
 
-MCP entrypoint loads `.env` from package root:
+MCP entrypoint loads `.env` from server directory:
 
-```python
-env_path = Path(__file__).resolve().parents[2] / ".env"
-if env_path.exists():
-    load_dotenv(env_path)
+```ts
+import { config } from "dotenv";
+config({ path: path.resolve(import.meta.dirname, "../../.env") });
 ```
 
 This ensures API keys are available regardless of CWD.
