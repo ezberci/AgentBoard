@@ -5,6 +5,8 @@ config({ path: path.resolve(import.meta.dirname, "../../.env") });
 import { prisma } from "../prisma/client.js";
 
 async function main() {
+  await prisma.$executeRawUnsafe("PRAGMA journal_mode=WAL;");
+
   // Clean existing data
   const tables = [
     "task_runs",

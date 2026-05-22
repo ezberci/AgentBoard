@@ -53,7 +53,8 @@ app.get("/tasks/:id", async (c) => {
   const id = Number(c.req.param("id"));
   const task = await tasksService.getTask(id);
   if (!task) throw new HTTPException(404, { message: "Task not found" });
-  return c.json(task);
+  const status = tasksService.deriveStatus(task);
+  return c.json({ ...task, status });
 });
 
 app.patch("/tasks/:id", zValidator("json", TaskUpdate), async (c) => {

@@ -40,10 +40,18 @@ export async function createTask(data: TaskCreate) {
   return task;
 }
 
+export function deriveStatus(
+  task: { claimed_at: Date | null; column?: { is_terminal: boolean } | null }
+): "done" | "todo" | "in_progress" {
+  if (task.column?.is_terminal) return "done";
+  if (!task.claimed_at) return "todo";
+  return "in_progress";
+}
+
 export async function getTask(taskId: number) {
   return prisma.task.findUnique({
     where: { id: taskId },
-    include: { comments: true },
+    include: { comments: true, column: true },
   });
 }
 
