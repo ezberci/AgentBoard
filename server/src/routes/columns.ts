@@ -1,3 +1,11 @@
+/**
+ * Routes: /api/projects/:id/columns, /api/columns
+ *   GET    /projects/:id/columns  - list columns for a project (paginated)
+ *   POST   /projects/:id/columns  - create column in project
+ *   PATCH  /columns/:id           - update column
+ *   DELETE /columns/:id           - delete column
+ *   POST   /columns/:id/reorder   - reorder columns within project
+ */
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";

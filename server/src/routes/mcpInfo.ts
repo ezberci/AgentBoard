@@ -1,3 +1,7 @@
+/**
+ * Routes: /api/mcp-info
+ *   GET    /mcp-info              - return MCP server connection info
+ */
 import { Hono } from "hono";
 
 const app = new Hono();

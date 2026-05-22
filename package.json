@@ -8,8 +8,11 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w web\" --names server,web --prefix-colors cyan,magenta",
+    "build": "npm run build -w server && npm run build -w web",
     "check": "npm run check -w server && npm run check -w web",
+    "typecheck": "npm run build -w server && npm run check -w web",
     "test": "npm run test -w server",
+    "test:watch": "npm run test:watch -w server",
     "db:generate": "npm run db:generate -w server",
     "db:migrate": "npm run db:migrate -w server",
     "db:seed": "npm run db:seed -w server",

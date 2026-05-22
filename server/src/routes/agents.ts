@@ -1,3 +1,13 @@
+/**
+ * Routes: /api/agents
+ *   GET    /agents                - list all agents (paginated)
+ *   POST   /agents                - create a new agent
+ *   GET    /agents/:id            - get agent detail (with skills)
+ *   PATCH  /agents/:id            - update agent
+ *   DELETE /agents/:id            - delete agent
+ *   POST   /agents/:id/skills/:skillId - assign skill to agent
+ *   DELETE /agents/:id/skills/:skillId - remove skill from agent
+ */
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";

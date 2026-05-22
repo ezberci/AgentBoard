@@ -1,3 +1,12 @@
+/**
+ * MCP server bootstrap using stdio transport.
+ *
+ * Server name: "agent-board"
+ * Tools are declared in the ListToolsRequestSchema handler and
+ * dispatched to functions in ./tools.ts via CallToolRequestSchema.
+ *
+ * Entrypoint: src/mcp/index.ts
+ */
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {

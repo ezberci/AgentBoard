@@ -1,3 +1,25 @@
+/**
+ * MCP tool implementations for the Agent Board MCP server.
+ *
+ * Exposed tools (defined in server.ts):
+ *   get_context(project_id?)     - current project, columns, recent tasks
+ *   list_projects()              - all projects
+ *   get_project(project_id)      - project detail
+ *   list_tasks(...)              - filtered tasks
+ *   get_task(task_id)            - task detail with comments
+ *   create_task(...)             - create new task
+ *   update_task(...)             - update task fields
+ *   delete_task(task_id)         - delete task
+ *   list_agents()                - all agents
+ *   get_agent(agent_id)          - agent with skills
+ *   list_skills()                - all skills
+ *   get_skill(skill_id)          - skill detail
+ *   assign_agent_to_task(...)    - assign agent
+ *   unassign_agent(task_id)      - remove assignment
+ *   claim_next_task(...)         - atomic task pickup
+ *   complete_task(...)           - write result + move to terminal column
+ *   add_task_comment(...)        - add comment
+ */
 import * as agentsService from "../services/agents.js";
 import * as columnsService from "../services/columns.js";
 import * as commentsService from "../services/comments.js";

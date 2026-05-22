@@ -1,3 +1,15 @@
+/**
+ * Task service — core business logic for tasks, moves, claims, and completions.
+ *
+ * Key operations:
+ *   createTask / getTask / listTasksByProject / listTasksFiltered
+ *   updateTask / moveTask / deleteTask
+ *   assignAgentToTask / unassignAgent
+ *   claimNextTask(agentId, projectId) — atomic UPDATE ... RETURNING
+ *   completeTask(taskId, result) — writes result + moves to terminal column
+ *
+ * Optimistic locking: updateTask and moveTask throw "version mismatch" on conflict.
+ */
 import { Prisma } from "@prisma/client";
 import { prisma } from "../prisma/client.js";
 import { logger } from "../lib/logger.js";

@@ -1,3 +1,15 @@
+/**
+ * Routes: /api/projects/:id/tasks, /api/tasks
+ *   GET    /projects/:id/tasks    - list tasks for a project (paginated)
+ *   POST   /tasks                 - create a new task
+ *   GET    /tasks/:id             - get task detail (with comments)
+ *   PATCH  /tasks/:id             - update task (409 on version mismatch)
+ *   DELETE /tasks/:id             - delete task
+ *   POST   /tasks/:id/move        - move task to column (409 on version mismatch)
+ *   POST   /tasks/:id/comments    - add comment to task
+ *   POST   /tasks/:id/run         - start LLM executor run (202 accepted)
+ *   GET    /tasks/:id/runs        - list task runs (paginated)
+ */
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";

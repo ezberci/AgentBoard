@@ -1,3 +1,7 @@
+/**
+ * MCP server standalone entrypoint.
+ * Loads env vars then starts the stdio MCP server.
+ */
 import "../lib/config.js";
 import { runMcpServer } from "./server.js";
 

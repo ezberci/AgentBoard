@@ -1,3 +1,12 @@
+/**
+ * Routes: /api/models
+ *   GET    /models                - list all models (paginated)
+ *   POST   /models                - create a new model
+ *   GET    /models/health         - check env var presence for each model
+ *   GET    /models/:id            - get model detail
+ *   PATCH  /models/:id            - update model
+ *   DELETE /models/:id            - delete model
+ */
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";

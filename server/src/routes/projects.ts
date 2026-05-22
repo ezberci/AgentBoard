@@ -1,3 +1,11 @@
+/**
+ * Routes: /api/projects
+ *   GET    /projects              - list all projects (paginated)
+ *   POST   /projects              - create a new project
+ *   GET    /projects/:id          - get project detail
+ *   PATCH  /projects/:id          - update project
+ *   DELETE /projects/:id          - delete project
+ */
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";

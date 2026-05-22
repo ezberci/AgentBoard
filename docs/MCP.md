@@ -23,7 +23,7 @@ In Claude Code:
 /mcp
 ```
 
-Check that `vibe-kanban` appears in the tool list.
+Check that `agent-board` appears in the tool list.
 
 ## 3. Available Tools
 

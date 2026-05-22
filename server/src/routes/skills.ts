@@ -1,3 +1,11 @@
+/**
+ * Routes: /api/skills
+ *   GET    /skills                - list all skills (paginated)
+ *   POST   /skills                - create a new skill
+ *   GET    /skills/:id            - get skill detail
+ *   PATCH  /skills/:id            - update skill
+ *   DELETE /skills/:id            - delete skill
+ */
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";

@@ -36,13 +36,15 @@ app.get("/api/health", (c) => c.json({ status: "ok" }));
 // Protected routes
 app.use("/api/*", requireAuth);
 
-app.route("/api", projects);
-app.route("/api", columns);
-app.route("/api", tasks);
-app.route("/api", agents);
-app.route("/api", skills);
-app.route("/api", models);
-app.route("/api", mcpInfo);
+// Mount route modules — each module registers its own sub-paths under /api.
+// See the JSDoc header in each routes/*.ts file for endpoint listings.
+app.route("/api", projects);   // /api/projects
+app.route("/api", columns);    // /api/columns, /api/projects/:id/columns
+app.route("/api", tasks);      // /api/tasks, /api/projects/:id/tasks
+app.route("/api", agents);     // /api/agents
+app.route("/api", skills);     // /api/skills
+app.route("/api", models);     // /api/models
+app.route("/api", mcpInfo);    // /api/mcp-info
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 
