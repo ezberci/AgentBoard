@@ -1,11 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { app } from "../../src/index.js";
+import { prisma } from "../../src/prisma/client.js";
 
 const apiKey = "dev-key-change-me";
 
 function headers() {
   return { "x-api-key": apiKey };
 }
+
+beforeEach(async () => {
+  await prisma.skill.deleteMany();
+});
 
 describe("skills", () => {
   describe("GET /api/skills", () => {
@@ -36,14 +41,14 @@ describe("skills", () => {
       const res = await app.request("/api/skills", {
         method: "POST",
         headers: { ...headers(), "content-type": "application/json" },
-        body: JSON.stringify({ name: "Skill Two", description: "desc", instructions: "inst", allowed_tools: "t1,t2" }),
+        body: JSON.stringify({ name: "Skill Two", description: "desc", instructions: "inst", allowed_tools: ["t1", "t2"] }),
       });
       expect(res.status).toBe(201);
       const json = await res.json();
       expect(json.name).toBe("Skill Two");
       expect(json.description).toBe("desc");
       expect(json.instructions).toBe("inst");
-      expect(json.allowed_tools).toBe("t1,t2");
+      expect(json.allowed_tools).toEqual(["t1", "t2"]);
     });
   });
 

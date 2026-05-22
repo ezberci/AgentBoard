@@ -3,6 +3,7 @@ import { logger } from "../lib/logger.js";
 import { getExecutor } from "../executors/registry.js";
 import { getModel } from "./models.js";
 import { broadcastProject } from "../ws/manager.js";
+import type { ExecutorContext } from "../executors/base.js";
 
 const RUN_TIMEOUT_MS = 300_000;
 
@@ -44,13 +45,27 @@ export async function executeTaskRun(
 
   const executor = getExecutor(model.provider);
 
+  let context: ExecutorContext | undefined;
+  if (task.assigned_agent_id) {
+    const agent = await prisma.agent.findUnique({
+      where: { id: task.assigned_agent_id },
+      include: { agentSkills: { include: { skill: true } } },
+    });
+    if (agent) {
+      context = {
+        systemPrompt: agent.system_prompt ?? undefined,
+        skills: agent.agentSkills.map((as) => as.skill),
+      };
+    }
+  }
+
   let output = "";
   try {
     const iterable = executor.run(prompt, {
       model_id: model.model_id,
       api_key_env: model.api_key_env,
       base_url: model.base_url,
-    });
+    }, context);
 
     const iterator = iterable[Symbol.asyncIterator]();
     const startTime = Date.now();

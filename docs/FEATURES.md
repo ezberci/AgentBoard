@@ -23,8 +23,8 @@
 ## 3. Agents & Skills
 
 - **Agents** — Create agents with name, system prompt, and auto-generated color slug. Agents can be assigned to tasks.
-- **Skills** — Define reusable skills with description, instructions, and allowed tools (JSON).
-- **Agent-Skill Assignment** — Many-to-many relation. Assign/unassign skills to agents via API.
+- **Skills** — Define reusable skills with description, instructions, and allowed tools (JSON). Full CRUD with inline editing in the UI.
+- **Agent-Skill Assignment** — Many-to-many relation. Assign/unassign skills to agents via API. Assigned skills are injected into the LLM context at runtime.
 - **Agent Colors** — Auto-generated 2-character slug from initials (e.g., "fb" for "Frontend Builder"), with deduplication suffixes.
 
 ## 4. Model Registry
@@ -35,7 +35,7 @@
 
 ## 5. LLM Executor System
 
-- **Task Runs** — Start an LLM execution on any task via `POST /api/tasks/{id}/run`.
+- **Task Runs** — Start an LLM execution on any task via `POST /api/tasks/{id}/run`. If the task has an assigned agent, its `system_prompt` and assigned skills' `instructions` are injected as `system` messages.
 - **Streaming Output** — Token-by-token SSE streaming from LLM APIs (DeepSeek, OpenAI-compatible).
 - **Live WebSocket Broadcast** — Each token is broadcast as a `run.token` event to the project WebSocket channel.
 - **Run History** — All runs persisted in `task_runs` table with status (`running`, `completed`, `failed`), output, usage metadata, and error message.

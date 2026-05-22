@@ -1,10 +1,11 @@
 import { logger } from "../lib/logger.js";
-import type { BaseExecutor } from "./base.js";
+import type { BaseExecutor, ExecutorContext } from "./base.js";
 
 export class DeepSeekExecutor implements BaseExecutor {
   async *run(
     prompt: string,
-    modelConfig: Record<string, unknown>
+    modelConfig: Record<string, unknown>,
+    context?: ExecutorContext
   ): AsyncIterable<string> {
     const apiKeyEnv = modelConfig.apiKeyEnv as string;
     const apiKey = process.env[apiKeyEnv];
@@ -19,6 +20,39 @@ export class DeepSeekExecutor implements BaseExecutor {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout * 1000);
 
+    const messages: Array<{ role: string; content: string }> = [];
+
+    if (context?.systemPrompt) {
+      messages.push({ role: "system", content: context.systemPrompt });
+    }
+
+    if (context?.skills && context.skills.length > 0) {
+      const skillParts: string[] = [];
+      for (const skill of context.skills) {
+        let part = `## ${skill.name}`;
+        if (skill.instructions) {
+          part += `\n${skill.instructions}`;
+        }
+        if (skill.allowed_tools) {
+          try {
+            const tools = JSON.parse(skill.allowed_tools) as unknown[];
+            if (Array.isArray(tools) && tools.length > 0) {
+              part += `\nAllowed tools: ${tools.map(String).join(", ")}`;
+            }
+          } catch {
+            part += `\nAllowed tools: ${skill.allowed_tools}`;
+          }
+        }
+        skillParts.push(part);
+      }
+      messages.push({
+        role: "system",
+        content: `You have the following skills:\n\n${skillParts.join("\n\n")}`,
+      });
+    }
+
+    messages.push({ role: "user", content: prompt });
+
     try {
       const response = await fetch(`${baseUrl}/chat/completions`, {
         method: "POST",
@@ -28,7 +62,7 @@ export class DeepSeekExecutor implements BaseExecutor {
         },
         body: JSON.stringify({
           model: modelId,
-          messages: [{ role: "user", content: prompt }],
+          messages,
           stream: true,
         }),
         signal: controller.signal,
