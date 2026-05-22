@@ -1,1 +1,0 @@
-/Users/arif/.kimi/AGENTS.md
