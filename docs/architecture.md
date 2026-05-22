@@ -44,7 +44,7 @@ AgentBoard/
 │   │   │   └── registry.ts
 │   │   ├── mcp/
 │   │   │   ├── server.ts
-│   │   │   └── tools.ts        # 18 tools
+│   │   │   └── tools.ts        # 17 tools
 │   │   └── lib/
 │   │       └── logger.ts       # pino
 │   ├── tests/
