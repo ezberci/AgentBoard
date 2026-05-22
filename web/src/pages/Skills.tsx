@@ -19,16 +19,22 @@ export function Skills() {
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
-    createSkill.mutate({
-      name: name.trim(),
-      description: description.trim() || undefined,
-      instructions: instructions.trim() || undefined,
-      allowed_tools: tools.length > 0 ? tools : undefined,
-    });
-    setName("");
-    setDescription("");
-    setInstructions("");
-    setAllowedTools("");
+    createSkill.mutate(
+      {
+        name: name.trim(),
+        description: description.trim() || undefined,
+        instructions: instructions.trim() || undefined,
+        allowed_tools: tools.length > 0 ? tools : undefined,
+      },
+      {
+        onSuccess: () => {
+          setName("");
+          setDescription("");
+          setInstructions("");
+          setAllowedTools("");
+        },
+      }
+    );
   };
 
   const handleDelete = (id: number) => {
@@ -75,6 +81,11 @@ export function Skills() {
             value={allowedTools}
             onChange={(e) => setAllowedTools(e.target.value)}
           />
+          {createSkill.isError && (
+            <p className="text-sm text-red-400">
+              {createSkill.error instanceof Error ? createSkill.error.message : "Failed to create skill"}
+            </p>
+          )}
           <div className="flex justify-end">
             <button
               type="submit"

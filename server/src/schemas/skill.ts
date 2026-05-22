@@ -4,7 +4,7 @@ export const SkillCreate = z.object({
   name: z.string().min(1).max(255),
   description: z.string().optional(),
   instructions: z.string().optional(),
-  allowed_tools: z.string().optional(),
+  allowed_tools: z.array(z.string()).optional(),
 });
 
 export const SkillRead = z.object({
@@ -12,7 +12,7 @@ export const SkillRead = z.object({
   name: z.string(),
   description: z.string().nullable(),
   instructions: z.string().nullable(),
-  allowed_tools: z.string().nullable(),
+  allowed_tools: z.array(z.string()).nullable().optional(),
   created_at: z.string().or(z.date()),
 });
 
@@ -20,7 +20,7 @@ export const SkillUpdate = z.object({
   name: z.string().min(1).max(255).optional(),
   description: z.string().optional(),
   instructions: z.string().optional(),
-  allowed_tools: z.string().optional(),
+  allowed_tools: z.array(z.string()).optional(),
 });
 
 export type SkillCreate = z.infer<typeof SkillCreate>;
