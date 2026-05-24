@@ -71,6 +71,7 @@ model Agent {
   tasks       Task[]
   runs        TaskRun[]
   agentSkills AgentSkill[]
+  agentTools  AgentTool[]
 
   @@map("agents")
 }
@@ -97,6 +98,31 @@ model AgentSkill {
 
   @@id([agent_id, skill_id])
   @@map("agent_skills")
+}
+
+model Tool {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique
+  description   String?
+  handler_key   String
+  json_schema   String?
+  is_enabled    Boolean  @default(true)
+  created_at    DateTime @default(now())
+
+  agentTools AgentTool[]
+
+  @@map("tools")
+}
+
+model AgentTool {
+  agent_id Int
+  tool_id  Int
+
+  agent Agent @relation(fields: [agent_id], references: [id], onDelete: Cascade)
+  tool  Tool  @relation(fields: [tool_id], references: [id], onDelete: Cascade)
+
+  @@id([agent_id, tool_id])
+  @@map("agent_tools")
 }
 
 model TaskComment {

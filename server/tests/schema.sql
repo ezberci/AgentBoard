@@ -68,6 +68,27 @@ CREATE TABLE "agent_skills" (
 );
 
 -- CreateTable
+CREATE TABLE "tools" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "handler_key" TEXT NOT NULL,
+    "json_schema" TEXT,
+    "is_enabled" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "agent_tools" (
+    "agent_id" INTEGER NOT NULL,
+    "tool_id" INTEGER NOT NULL,
+
+    PRIMARY KEY ("agent_id", "tool_id"),
+    CONSTRAINT "agent_tools_agent_id_fkey" FOREIGN KEY ("agent_id") REFERENCES "agents" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "agent_tools_tool_id_fkey" FOREIGN KEY ("tool_id") REFERENCES "tools" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
 CREATE TABLE "task_comments" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "task_id" INTEGER NOT NULL,
@@ -127,6 +148,9 @@ CREATE UNIQUE INDEX "agents_color_key" ON "agents"("color");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "skills_name_key" ON "skills"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "tools_name_key" ON "tools"("name");
 
 -- CreateIndex
 CREATE INDEX "idx_task_comments_task_created" ON "task_comments"("task_id", "created_at");

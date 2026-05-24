@@ -45,9 +45,11 @@ afterEach(async () => {
   const tablenames = [
     "task_runs",
     "task_comments",
+    "agent_tools",
     "agent_skills",
     "tasks",
     "columns",
+    "tools",
     "skills",
     "agents",
     "models",
