@@ -27,13 +27,21 @@
 - **Agent-Skill Assignment** — Many-to-many relation. Assign/unassign skills to agents via API. Assigned skills are injected into the LLM context at runtime.
 - **Agent Colors** — Auto-generated 2-character slug from initials (e.g., "fb" for "Frontend Builder"), with deduplication suffixes.
 
-## 4. Model Registry
+## 4. Agent Tools
+
+- **Tool Registry** — Built-in tools (read, write, shell, glob, grep, webfetch, websearch, etc.) are registered in a typed TypeScript registry. Each tool has a Zod parameter schema, a description, and an execute function.
+- **Tool DB Records** — Tools are also first-class DB entities (`tools` table) with `name`, `description`, `handler_key`, `json_schema`, and `is_enabled`. This lets the frontend list and manage them.
+- **Agent-Tool Assignment** — Many-to-many relation via `agent_tools`. Assign any subset of tools to any agent.
+- **Function Calling** — When an agent with tools runs a task, the executor sends the OpenAI-compatible `tools` array to the LLM. The LLM can call tools via structured `tool_calls`; results are fed back into the conversation automatically (up to 10 iterations).
+- **20+ Tools** — Filesystem (read, write, edit, apply_patch), Search (glob, grep), Shell (shell, task, task_status), Web (webfetch, websearch, repo_clone, repo_overview), Planning (plan, todo, question), and Advanced (truncate, lsp stub, skill stub, mcp_websearch stub).
+
+## 5. Model Registry
 
 - **Model CRUD** — Register LLM providers (e.g., DeepSeek) with model ID, API key env var name, and optional base URL.
 - **Health Check** — `GET /api/models/health` returns whether each model's env var is present in `process.env`.
 - **Dynamic Executor Lookup** — Executors read provider name from the `models` table at runtime.
 
-## 5. LLM Executor System
+## 6. LLM Executor System
 
 - **Task Runs** — Start an LLM execution on any task via `POST /api/tasks/{id}/run`. If the task has an assigned agent, its `system_prompt` and assigned skills' `instructions` are injected as `system` messages.
 - **Streaming Output** — Token-by-token SSE streaming from LLM APIs (DeepSeek, OpenAI-compatible).
@@ -42,7 +50,7 @@
 - **Concurrency Limit** — Max 5 concurrent runs. Additional requests receive `503 Service Unavailable`.
 - **Failure Isolation** — Executor failures update the run record and broadcast `run.finished` with error, but do NOT move the task column.
 
-## 6. MCP Integration (Claude Code)
+## 7. MCP Integration (Claude Code)
 
 - **MCP Server** — Stdio-based MCP server exposing 16 tools for Claude Code.
 - **Atomic Claim** — `claim_next_task` uses a single `UPDATE ... RETURNING` SQL statement to prevent race conditions when multiple agents claim simultaneously.
@@ -51,7 +59,7 @@
 - **Task Completion** — `complete_task` writes result and automatically moves task to the terminal column.
 - **Status Filtering** — `list_tasks` accepts `status` filter (`todo`, `in_progress`, `done`) derived from columns.
 
-## 7. Real-time Features
+## 8. Real-time Features
 
 - **WebSocket Channels** — Two channels:
   - `/ws/projects/{id}` — project-scoped events (tasks, columns, runs, comments)
@@ -59,7 +67,7 @@
 - **WebSocket Reconcile** — Frontend updates React Query cache directly on WS events instead of full refetch.
 - **Optimistic UI** — Task drag-and-drop updates local state immediately, rolling back on API failure.
 
-## 8. Frontend
+## 9. Frontend
 
 - **Three Board Views** — `classic` (Kanban columns), `dense` (compact list), `swimlanes` (agent rows × columns).
 - **Drag & Drop** — `@dnd-kit/core` for moving tasks between columns.
@@ -70,7 +78,7 @@
 - **Markdown Rendering** — Task descriptions, results, and live output rendered with `react-markdown` + Tailwind typography.
 - **Settings Page** — Backend health, model env checks, and one-click MCP config copy.
 
-## 9. Authentication
+## 10. Authentication
 
 - **API Key** — All endpoints (except `/api/health`) require `x-api-key` header. Key is set via `API_KEY` env var.
 - **CORS** — Configured for `localhost:5173` (frontend dev server).
