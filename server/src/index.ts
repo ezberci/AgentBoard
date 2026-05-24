@@ -16,7 +16,9 @@ import models from "./routes/models.js";
 import projects from "./routes/projects.js";
 import skills from "./routes/skills.js";
 import tasks from "./routes/tasks.js";
+import tools from "./routes/tools.js";
 import { manager } from "./ws/manager.js";
+import "./tools/index.js";
 
 export const app = new Hono();
 
@@ -43,6 +45,7 @@ app.route("/api", columns);    // /api/columns, /api/projects/:id/columns
 app.route("/api", tasks);      // /api/tasks, /api/projects/:id/tasks
 app.route("/api", agents);     // /api/agents
 app.route("/api", skills);     // /api/skills
+app.route("/api", tools);      // /api/tools
 app.route("/api", models);     // /api/models
 app.route("/api", mcpInfo);    // /api/mcp-info
 

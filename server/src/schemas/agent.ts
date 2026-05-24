@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ToolRead } from "./tool.js";
 
 export const AgentCreate = z.object({
   name: z.string().min(1).max(255),
@@ -12,6 +13,8 @@ export const AgentRead = z.object({
   system_prompt: z.string().nullable(),
   color: z.string().nullable(),
   created_at: z.string().or(z.date()),
+  skills: z.array(z.any()).optional(),
+  tools: z.array(ToolRead).optional(),
 });
 
 export const AgentUpdate = z.object({
