@@ -5,15 +5,21 @@ config({ path: path.resolve(import.meta.dirname, "../../.env") });
 import { prisma } from "../prisma/client.js";
 
 async function main() {
-  await prisma.$executeRawUnsafe("PRAGMA journal_mode=WAL;");
+  try {
+    await prisma.$queryRawUnsafe("PRAGMA journal_mode=WAL;");
+  } catch {
+    // Ignore — may fail if driver disallows result-returning pragmas in executeRaw
+  }
 
-  // Clean existing data
+  // Clean existing data (order matters for FK constraints)
   const tables = [
     "task_runs",
     "task_comments",
+    "agent_tools",
     "agent_skills",
     "tasks",
     "columns",
+    "tools",
     "skills",
     "agents",
     "models",
@@ -66,10 +72,41 @@ async function main() {
     skills.push(await prisma.skill.create({ data: s }));
   }
 
+  const toolSpecs = [
+    { name: "Read File", description: "Read the contents of a file or list directory entries.", handler_key: "read" },
+    { name: "Edit File", description: "Replace an exact string in a file.", handler_key: "edit" },
+    { name: "Write File", description: "Create or overwrite a file.", handler_key: "write" },
+    { name: "Apply Patch", description: "Apply a patch to add, update, move, or delete files.", handler_key: "apply_patch" },
+    { name: "Shell", description: "Execute a shell command and return its output.", handler_key: "shell" },
+    { name: "Background Task", description: "Spawn a shell command as a background task.", handler_key: "task" },
+    { name: "Task Status", description: "Check the status of a background task by ID.", handler_key: "task_status" },
+    { name: "Web Search", description: "Search the web using DuckDuckGo.", handler_key: "websearch" },
+    { name: "Web Fetch", description: "Fetch a URL and return its text content.", handler_key: "webfetch" },
+    { name: "Repo Overview", description: "Summarize a repository structure.", handler_key: "repo_overview" },
+    { name: "Repo Clone", description: "Clone a git repository.", handler_key: "repo_clone" },
+    { name: "Glob Search", description: "Find files matching a glob pattern.", handler_key: "glob" },
+    { name: "Grep Search", description: "Search file contents with regex.", handler_key: "grep" },
+    { name: "Todo List", description: "Manage a todo list for the current run.", handler_key: "todo" },
+    { name: "Plan", description: "Create a structured plan with steps.", handler_key: "plan" },
+    { name: "Plan Enter", description: "Signal the start of a planning phase.", handler_key: "plan_enter" },
+    { name: "Plan Exit", description: "Signal the end of a planning phase.", handler_key: "plan_exit" },
+    { name: "Question", description: "Ask the user a clarifying question.", handler_key: "question" },
+    { name: "Truncate", description: "Truncate content to a max length.", handler_key: "truncate" },
+    { name: "Truncation Dir", description: "List directory entries with truncation.", handler_key: "truncation_dir" },
+    { name: "Skill Invoke", description: "Invoke another skill by name.", handler_key: "skill" },
+  ];
+  const tools = [];
+  for (const t of toolSpecs) {
+    tools.push(await prisma.tool.create({ data: t }));
+  }
+
   for (let i = 0; i < agents.length; i++) {
     await prisma.agent.update({
       where: { id: agents[i].id },
-      data: { agentSkills: { create: { skill_id: skills[i % skills.length].id } } },
+      data: {
+        agentSkills: { create: { skill_id: skills[i % skills.length].id } },
+        agentTools: { create: { tool_id: tools[i % tools.length].id } },
+      },
     });
   }
 
@@ -119,7 +156,7 @@ async function main() {
   if (task1) await prisma.taskComment.create({ data: { task_id: task1.id, author: "Bob", body: "Needs more indexes." } });
   if (task2) await prisma.taskComment.create({ data: { task_id: task2.id, author: "Charlie", body: "Looks good to me." } });
 
-  console.log(`Seeded ${taskTitles.length} tasks, ${agents.length} agents`);
+  console.log(`Seeded ${taskTitles.length} tasks, ${agents.length} agents, ${tools.length} tools`);
 }
 
 main()
