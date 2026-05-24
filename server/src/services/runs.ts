@@ -4,6 +4,8 @@ import { getExecutor } from "../executors/registry.js";
 import { getModel } from "./models.js";
 import { broadcastProject } from "../ws/manager.js";
 import type { ExecutorContext } from "../executors/base.js";
+import { getTool } from "../tools/registry.js";
+import type { ToolDefinition } from "../tools/types.js";
 
 const RUN_TIMEOUT_MS = 300_000;
 
@@ -49,12 +51,18 @@ export async function executeTaskRun(
   if (task.assigned_agent_id) {
     const agent = await prisma.agent.findUnique({
       where: { id: task.assigned_agent_id },
-      include: { agentSkills: { include: { skill: true } } },
+      include: {
+        agentSkills: { include: { skill: true } },
+        agentTools: { include: { tool: true } },
+      },
     });
     if (agent) {
       context = {
         systemPrompt: agent.system_prompt ?? undefined,
         skills: agent.agentSkills.map((as) => as.skill),
+        tools: agent.agentTools
+          .map((at) => getTool(at.tool.handler_key))
+          .filter(Boolean) as ToolDefinition[],
       };
     }
   }
