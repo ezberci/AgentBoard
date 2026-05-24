@@ -29,7 +29,7 @@ function deriveStatus(task: Task, columns: ColumnType[]): StatusFilter {
   return "todo";
 }
 
-const UNASSIGNED_AGENT: Agent = { id: -1, name: "Unassigned", color: undefined, system_prompt: undefined, created_at: "", skills: [] };
+const UNASSIGNED_AGENT: Agent = { id: -1, name: "Unassigned", color: undefined, system_prompt: undefined, created_at: "", skills: [], tools: [] };
 
 export function Board() {
   const queryClient = useQueryClient();

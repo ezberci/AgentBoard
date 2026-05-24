@@ -1,4 +1,4 @@
-import type { Project, Column, Task, Agent, Skill, TaskComment, Model, TaskRun } from "@/types";
+import type { Project, Column, Task, Agent, Skill, Tool, TaskComment, Model, TaskRun } from "@/types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8765/api";
 const API_KEY = import.meta.env.VITE_API_KEY ?? "dev-key-change-me";
@@ -67,6 +67,10 @@ export const api = {
     fetchJson<Agent>(`/agents/${agentId}/skills/${skillId}`, { method: "POST" }),
   removeSkill: (agentId: number, skillId: number) =>
     fetchJson<void>(`/agents/${agentId}/skills/${skillId}`, { method: "DELETE" }),
+  assignTool: (agentId: number, toolId: number) =>
+    fetchJson<Agent>(`/agents/${agentId}/tools/${toolId}`, { method: "POST" }),
+  removeTool: (agentId: number, toolId: number) =>
+    fetchJson<void>(`/agents/${agentId}/tools/${toolId}`, { method: "DELETE" }),
 
   getSkills: () => fetchJson<Skill[]>("/skills"),
   getSkill: (id: number) => fetchJson<Skill>(`/skills/${id}`),
@@ -75,6 +79,14 @@ export const api = {
   updateSkill: (id: number, payload: { name?: string; description?: string; instructions?: string; allowed_tools?: unknown[] }) =>
     fetchJson<Skill>(`/skills/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
   deleteSkill: (id: number) => fetchJson<void>(`/skills/${id}`, { method: "DELETE" }),
+
+  getTools: () => fetchJson<Tool[]>("/tools"),
+  getTool: (id: number) => fetchJson<Tool>(`/tools/${id}`),
+  createTool: (payload: { name: string; description?: string; handler_key: string; json_schema?: string; is_enabled?: boolean }) =>
+    fetchJson<Tool>("/tools", { method: "POST", body: JSON.stringify(payload) }),
+  updateTool: (id: number, payload: Partial<Tool>) =>
+    fetchJson<Tool>(`/tools/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteTool: (id: number) => fetchJson<void>(`/tools/${id}`, { method: "DELETE" }),
 
   getModels: () => fetchJson<Model[]>("/models"),
   getModel: (id: number) => fetchJson<Model>(`/models/${id}`),

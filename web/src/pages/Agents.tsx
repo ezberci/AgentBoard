@@ -2,20 +2,26 @@ import { useState } from "react";
 import {
   useAgents,
   useSkills,
+  useTools,
   useCreateAgent,
   useDeleteAgent,
   useAssignSkill,
   useRemoveSkill,
+  useAssignTool,
+  useRemoveTool,
 } from "@/hooks/useAgents";
-import type { Agent, Skill } from "@/types";
+import type { Agent, Skill, Tool } from "@/types";
 
 export function Agents() {
   const { data: agents, isLoading } = useAgents();
   const { data: skills } = useSkills();
+  const { data: tools } = useTools();
   const createAgent = useCreateAgent();
   const deleteAgent = useDeleteAgent();
   const assignSkill = useAssignSkill();
   const removeSkill = useRemoveSkill();
+  const assignTool = useAssignTool();
+  const removeTool = useRemoveTool();
 
   const [name, setName] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
@@ -40,6 +46,15 @@ export function Agents() {
       removeSkill.mutate({ agentId: agent.id, skillId: skill.id });
     } else {
       assignSkill.mutate({ agentId: agent.id, skillId: skill.id });
+    }
+  };
+
+  const toggleTool = (agent: Agent, tool: Tool) => {
+    const hasTool = agent.tools.some((t) => t.id === tool.id);
+    if (hasTool) {
+      removeTool.mutate({ agentId: agent.id, toolId: tool.id });
+    } else {
+      assignTool.mutate({ agentId: agent.id, toolId: tool.id });
     }
   };
 
@@ -150,9 +165,37 @@ export function Agents() {
                         {skill.name}
                       </button>
                     );
-                  })}'
+                  })}
                   {(!skills || skills.length === 0) && (
                     <span className="text-sm text-muted-fg">No skills available.</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <h4 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-fg">
+                  Tools
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {tools?.map((tool) => {
+                    const hasTool = agent.tools.some((t) => t.id === tool.id);
+                    return (
+                      <button
+                        key={tool.id}
+                        onClick={() => toggleTool(agent, tool)}
+                        disabled={assignTool.isPending || removeTool.isPending}
+                        className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                          hasTool
+                            ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500"
+                            : "border border-border bg-surface-sunken text-muted-fg hover:text-zinc-200"
+                        } disabled:opacity-50`}
+                      >
+                        {tool.name}
+                      </button>
+                    );
+                  })}
+                  {(!tools || tools.length === 0) && (
+                    <span className="text-sm text-muted-fg">No tools available.</span>
                   )}
                 </div>
               </div>

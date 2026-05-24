@@ -31,6 +31,16 @@ export interface Task {
   updated_at: string;
 }
 
+export interface Tool {
+  id: number;
+  name: string;
+  description?: string;
+  handler_key: string;
+  json_schema?: string;
+  is_enabled: boolean;
+  created_at: string;
+}
+
 export interface Agent {
   id: number;
   name: string;
@@ -38,6 +48,7 @@ export interface Agent {
   color?: string;
   created_at: string;
   skills: Skill[];
+  tools: Tool[];
 }
 
 export interface Skill {

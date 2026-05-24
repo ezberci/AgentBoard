@@ -70,6 +70,66 @@ export function useRemoveSkill() {
   });
 }
 
+export function useAssignTool() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ agentId, toolId }: { agentId: number; toolId: number }) =>
+      api.assignTool(agentId, toolId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
+    },
+  });
+}
+
+export function useRemoveTool() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ agentId, toolId }: { agentId: number; toolId: number }) =>
+      api.removeTool(agentId, toolId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
+    },
+  });
+}
+
+export function useTools() {
+  return useQuery({
+    queryKey: ["tools"],
+    queryFn: api.getTools,
+  });
+}
+
+export function useCreateTool() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.createTool,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tools"] });
+    },
+  });
+}
+
+export function useUpdateTool() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Parameters<typeof api.updateTool>[1] }) =>
+      api.updateTool(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tools"] });
+    },
+  });
+}
+
+export function useDeleteTool() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.deleteTool,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tools"] });
+    },
+  });
+}
+
 export function useSkills() {
   return useQuery({
     queryKey: ["skills"],

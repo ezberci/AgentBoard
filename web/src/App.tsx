@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Board } from "@/pages/Board";
 import { Agents } from "@/pages/Agents";
 import { Skills } from "@/pages/Skills";
+import { Tools } from "@/pages/Tools";
 import { Models } from "@/pages/Models";
 import { Settings } from "@/pages/Settings";
 
-type Page = "board" | "agents" | "skills" | "models" | "settings";
+type Page = "board" | "agents" | "skills" | "tools" | "models" | "settings";
 
 export function App() {
   const [page, setPage] = useState<Page>("board");
@@ -23,6 +24,9 @@ export function App() {
         <NavButton active={page === "skills"} onClick={() => setPage("skills")}>
           Skills
         </NavButton>
+        <NavButton active={page === "tools"} onClick={() => setPage("tools")}>
+          Tools
+        </NavButton>
         <NavButton active={page === "models"} onClick={() => setPage("models")}>
           Models
         </NavButton>
@@ -37,6 +41,7 @@ export function App() {
         {page === "board" && <Board />}
         {page === "agents" && <Agents />}
         {page === "skills" && <Skills />}
+        {page === "tools" && <Tools />}
         {page === "models" && <Models />}
         {page === "settings" && <Settings />}
       </main>
